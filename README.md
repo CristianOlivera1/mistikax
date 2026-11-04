@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mistikax
 
-## Getting Started
+Tienda de ropa y calzado para hombre (Perú, PEN) y su panel de administración. El proyecto está migrando los prototipos `dashboard.html` y `client.html` a una app Next.js 16 con componentes reutilizables.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 24
+- pnpm 11
+
+## Desarrollo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La app queda disponible en `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Rutas actuales:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/` — placeholder de la tienda
+- `/login` — pantalla de acceso del panel (validación lista; sesión pendiente)
+- `/admin` — placeholder del panel
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev        # servidor de desarrollo
+pnpm build      # build de producción
+pnpm start      # servir el build
+pnpm lint       # ESLint
+pnpm typecheck  # TypeScript sin emitir
+pnpm format     # Prettier + orden de clases de Tailwind
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estructura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+src/
+├─ app/          # rutas, layouts y metadata
+│  ├─ (store)/   # tienda pública
+│  ├─ (admin)/   # panel privado
+│  └─ (auth)/    # login
+├─ components/   # shadcn/ui, shared y shell por área
+├─ features/     # dominio: components, queries, actions y schemas
+├─ db/           # esquema Drizzle (fase 4)
+└─ lib/          # utilidades, constantes y entorno
+```
 
-## Deploy on Vercel
+Los assets locales viven en `public/images` y `public/svg`; las subidas de runtime irán a `storage/uploads`, fuera de `public`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Estado
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Fase 0 completada: base Next.js en `src/`, shadcn/ui, Tailwind v4, temas de admin y tienda, fuentes locales y login visual.
+
+La autenticación real (Better Auth) y Supabase se conectan en fases posteriores. No hay sesión ni base de datos en este momento.
+
+## Documentación
+
+- [plan.md](plan.md) — fases, estructura objetivo, modelo de datos y migración de la tienda.
+- [CLAUDE.md](CLAUDE.md) — reglas de código, arquitectura, UI y seguridad.

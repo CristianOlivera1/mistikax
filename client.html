@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MISTIKAX | Ropa para hombre</title>
+    <meta name="description"
+        content="Mistikax: ropa y calzado para hombre. Polos, camisas, pantalones, casacas, zapatillas y gorras para niños, jóvenes y adultos.">
+    <link rel="icon" type="image/svg+xml" href="public/svg/logo.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Oswald:wght@300;400;500;600;700&family=Montserrat:wght@700;800&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind 4: sin tailwind.config, el tema va en @theme -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+    --font-sans: 'Manrope', sans-serif;
+    --font-manrope: 'Manrope', sans-serif;
+    --font-oswald: 'Oswald', sans-serif;
+    --font-montserrat: 'Montserrat', sans-serif;
+    --font-space-mono: 'Space Mono', monospace;
+    --color-premium: #D4C5B9;
+    --color-premium-hover: #A89B90;
+    --color-premium-light: #EBE3DD;
+    --color-taupe: #A89B90;
+    --color-offwhite: #FEFDFB;
+    --color-surface: #F9F7F5;
+    --color-dark: #1A1A1A;
+    --color-grey-light: #E8E8E8;
+    --color-grey-mid: #999999;
+    --color-grey-dark: #7F7F7F;
+    --color-success: #6B9E64;
+    --color-error: #C54E4E;
+  }
+  body { background-color: #FEFDFB; color: #1A1A1A; font-family: 'Manrope', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #FEFDFB; }
+  ::-webkit-scrollbar-thumb { background: #D4C5B9; }
+
+  .btn { @apply inline-flex items-center justify-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-widest transition-colors; }
+  .btn-p { @apply bg-premium text-dark hover:bg-premium-hover hover:text-offwhite; }
+  .btn-d { @apply bg-dark text-white hover:bg-premium hover:text-dark; }
+  .btn-o { @apply border border-dark text-dark hover:bg-dark hover:text-white; }
+  .chip { @apply min-w-12 border border-grey-light bg-white px-3 py-2.5 text-sm font-medium transition-colors hover:border-dark; }
+  .chip.on { @apply border-dark bg-dark text-white; }
+  .eyebrow { @apply font-space-mono text-[10px] uppercase tracking-widest text-grey-dark; }
+  .h-title { @apply font-oswald font-light uppercase leading-none tracking-[0.05em] text-dark; }
+  #app { animation: fade .35s ease-out; }
+  @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+  input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #FEFDFB; border: 4px solid #D4C5B9; cursor: pointer; margin-top: -7px; box-shadow: 0 0 0 2px rgba(212,197,185,.5); }
+  input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; cursor: pointer; background: #E8E8E8; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+
+<body class="antialiased text-dark">
+
+    <!-- HEADER -->
+    <header class="fixed top-0 z-50 w-full border-b border-grey-light bg-offwhite/95 backdrop-blur-md">
+        <div class="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-6">
+            <a href="#/" class="flex items-center gap-3" aria-label="Mistikax inicio">
+                <img src="public/svg/logo-full.svg" alt="Mistikax" class="h-8 w-auto object-contain"
+                    onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'font-oswald text-2xl font-semibold tracking-[0.2em]',textContent:'MISTIKAX'}))">
+            </a>
+            <nav class="hidden items-center gap-6 text-xs font-medium uppercase tracking-widest text-grey-dark xl:flex"
+                aria-label="Principal">
+                <a href="#/" class="transition-colors hover:text-premium-hover">Inicio</a>
+                <a href="#/catalogo?age=nino" class="transition-colors hover:text-premium-hover">Niños</a>
+                <a href="#/catalogo?age=joven" class="transition-colors hover:text-premium-hover">Jóvenes</a>
+                <a href="#/catalogo?age=adulto" class="transition-colors hover:text-premium-hover">Adultos</a>
+                <a href="#/catalogo?cat=polos" class="transition-colors hover:text-premium-hover">Polos</a>
+                <a href="#/catalogo?cat=calzado" class="transition-colors hover:text-premium-hover">Calzado</a>
+                <a href="#/catalogo?cat=gorras" class="transition-colors hover:text-premium-hover">Gorras</a>
+                <a href="#/catalogo?sale=1" class="text-error transition-colors hover:opacity-70">Ofertas</a>
+                <a href="#/info/contacto" class="transition-colors hover:text-premium-hover">Contacto</a>
+            </nav>
+            <div class="flex items-center gap-2">
+                <button data-act="search" class="p-2" aria-label="Buscar"><span data-ic="search"></span></button>
+                <button data-act="cart" class="relative p-2" aria-label="Abrir carrito">
+                    <span data-ic="bag"></span>
+                    <span id="badge"
+                        class="absolute -right-0.5 -top-0.5 hidden min-w-5 bg-dark px-1 text-center text-[11px] font-bold leading-5 text-white">0</span>
+                </button>
+                <button data-act="menu" class="p-2 xl:hidden" aria-label="Abrir menú"><span
+                        data-ic="menu"></span></button>
+                <a href="#/info/contacto"
+                    class="ml-2 hidden items-center bg-premium px-6 py-3 text-xs font-bold tracking-wider text-dark transition-all hover:bg-premium-hover hover:text-offwhite md:flex">CONTACTO</a>
+            </div>
+        </div>
+        <div id="searchBar" class="hidden border-t border-grey-light bg-offwhite">
+            <form id="search" class="mx-auto flex max-w-[1400px] gap-3 px-6 py-3" role="search">
+                <input name="q" type="search" placeholder="Buscar polos, zapatillas, gorras..."
+                    class="w-full border border-dark bg-white p-3 text-sm placeholder:text-dark/30 focus:outline-none focus:ring-1 focus:ring-dark">
+                <button class="btn btn-d">Buscar</button>
+            </form>
+        </div>
+    </header>
+
+    <!-- MENÚ MÓVIL -->
+    <div id="mobileMenu"
+        class="fixed inset-0 z-[60] hidden flex-col gap-1 overflow-y-auto bg-offwhite px-6 pb-10 pt-24">
+        <button data-act="menu" class="absolute right-6 top-6" aria-label="Cerrar menú"><span
+                data-ic="x"></span></button>
+    </div>
+
+    <main id="app" class="min-h-screen pt-20"></main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10 bg-[#857262] pb-10 pt-20 text-white">
+        <div class="mx-auto max-w-[1400px] px-6">
+            <div class="mb-20 grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+                <div>
+                    <a href="#/" class="mb-8 block font-oswald text-3xl font-semibold tracking-[0.2em]">MISTIKAX</a>
+                    <p class="max-w-xs text-sm leading-relaxed text-white/80">Tienda de ropa y calzado para hombre. Para
+                        niños, jóvenes y adultos. Calidad que se nota.</p>
+                </div>
+                <div>
+                    <h4 class="mb-8 text-xs font-bold uppercase tracking-widest text-white/60">Tienda</h4>
+                    <ul id="f-cats" class="space-y-4 text-sm font-medium"></ul>
+                </div>
+                <div>
+                    <h4 class="mb-8 text-xs font-bold uppercase tracking-widest text-white/60">Ayuda</h4>
+                    <ul class="space-y-4 text-sm font-medium">
+                        <li><a class="hover:text-white/70" href="#/info/tallas">Guía de tallas</a></li>
+                        <li><a class="hover:text-white/70" href="#/info/envios">Envíos</a></li>
+                        <li><a class="hover:text-white/70" href="#/info/cambios">Cambios y devoluciones</a></li>
+                        <li><a class="hover:text-white/70" href="#/info/nosotros">Nosotros</a></li>
+                        <li><a class="hover:text-white/70" href="#/info/contacto">Contacto</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="mb-8 text-xs font-bold uppercase tracking-widest text-white/60">Contacto</h4>
+                    <ul class="space-y-6 text-sm">
+                        <li><span class="mb-1 block text-xs text-white/60">Dirección</span>Calle Principal 101,
+                            Ciudad<br>hola@mistikax.com</li>
+                        <li><span class="mb-1 block text-xs text-white/60">Ventas / WhatsApp</span><a id="f-wa" href="#"
+                                class="font-oswald text-xl tracking-wide hover:text-white/80">+996 (998) 154-550</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div
+                class="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-[10px] uppercase tracking-widest text-white/50 md:flex-row">
+                <p>© 2026 Mistikax Tienda de Ropa. Todos los derechos reservados.</p>
+                <div class="flex gap-6"><a href="#" class="hover:text-white">Política de privacidad</a><a href="#"
+                        class="hover:text-white">Términos del servicio</a></div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- CARRITO -->
+    <div id="overlay" data-act="close" class="fixed inset-0 z-[70] hidden bg-black/40"></div>
+    <aside id="drawer"
+        class="fixed right-0 top-0 z-[80] flex h-full w-full max-w-md translate-x-full flex-col bg-offwhite transition-transform duration-300"
+        aria-label="Carrito">
+        <div class="flex items-center justify-between border-b border-grey-light px-6 py-5">
+            <h2 class="font-oswald text-2xl font-light uppercase tracking-[0.05em]">Tu carrito</h2>
+            <button data-act="close" aria-label="Cerrar carrito"><span data-ic="x"></span></button>
+        </div>
+        <div id="cart-body" class="flex-1 overflow-y-auto px-6"></div>
+        <div id="cart-foot" class="border-t border-grey-light p-6"></div>
+    </aside>
+
+    <dialog id="sg" class="m-auto w-[min(92vw,28rem)] bg-offwhite p-6 backdrop:bg-black/40"></dialog>
+
+    <script>
+        /* ============ CONFIGURACIÓN (edita aquí) ============ */
+        const CUR = 'S/', WA = '996998154550', FREE = 200, SHIP = 15;
+
+        const CATS = [['polos', 'Polos'], ['camisas', 'Camisas'], ['pantalones', 'Pantalones'], ['casacas', 'Casacas'], ['calzado', 'Calzado'], ['gorras', 'Gorras'], ['accesorios', 'Accesorios']];
+        const AGES = [['nino', 'Niños', '4 a 14 años'], ['joven', 'Jóvenes', 'Tallas XS a L'], ['adulto', 'Adultos', 'Tallas S a XXL']];
+        const C = { ng: ['Negro', '#111827'], bl: ['Blanco', '#f5f5f4'], az: ['Azul marino', '#1e3a5f'], gr: ['Gris', '#9ca3af'], ol: ['Oliva', '#4d5a3c'], be: ['Beige', '#d6c3a5'], rj: ['Rojo', '#b91c1c'], ce: ['Celeste', '#7fb2d9'], mr: ['Marrón', '#6b4a2f'] };
+
+        /* Tallas según categoría y edad */
+        const sizesFor = (cat, age) =>
+            cat === 'calzado' ? { nino: ['28', '30', '32', '34'], joven: ['36', '37', '38', '39', '40'], adulto: ['39', '40', '41', '42', '43', '44'] }[age]
+                : (cat === 'gorras' || cat === 'accesorios') ? ['Única']
+                    : { nino: ['4', '6', '8', '10', '12', '14'], joven: ['XS', 'S', 'M', 'L'], adulto: ['S', 'M', 'L', 'XL', 'XXL'] }[age];
+
+        const u = id => `https://images.unsplash.com/photo-${id}?q=80&w=900&auto=format&fit=crop`;
+        const P = (id, n, cat, age, price, old, colors, img, extra = {}) => ({ id, n, cat, age, price, old, colors: colors.map(c => C[c]), imgs: [u(img)], sizes: sizesFor(cat, age), ...extra });
+        /* Para varias fotos por producto: imgs: [u('id1'), u('id2')] */
+        const PRODUCTS = [
+            P('polo-pique-clasico', 'Polo piqué clásico', 'polos', 'adulto', 59.9, 79.9, ['ng', 'bl', 'az'], '1521572163474-6864f9cf17ab', { best: 1 }),
+            P('polo-urbano', 'Polo urbano oversize', 'polos', 'joven', 49.9, 0, ['gr', 'ol', 'bl'], '1529139574466-a303027c1d8b', { isNew: 1 }),
+            P('polo-kids', 'Polo básico kids', 'polos', 'nino', 34.9, 0, ['ce', 'rj', 'az'], '1551488831-00ddcb6c6bd3'),
+            P('camisa-oxford', 'Camisa Oxford', 'camisas', 'adulto', 89.9, 0, ['bl', 'ce'], '1596755094514-f87e34085b2c', { best: 1 }),
+            P('camisa-lino', 'Camisa de lino', 'camisas', 'adulto', 99.9, 129.9, ['be', 'bl'], '1617137968427-85924c800a22'),
+            P('camisa-casual', 'Camisa casual', 'camisas', 'joven', 69.9, 0, ['az', 'ol'], '1620799140408-edc6dcb6d633', { isNew: 1 }),
+            P('jean-slim', 'Jean slim fit', 'pantalones', 'adulto', 119.9, 0, ['az', 'ng'], '1542272604-787c3835535d', { best: 1 }),
+            P('jogger-joven', 'Jogger deportivo', 'pantalones', 'joven', 79.9, 0, ['gr', 'ng'], '1490481651871-ab68de25d43d'),
+            P('pantalon-kids', 'Pantalón kids', 'pantalones', 'nino', 54.9, 0, ['az', 'be'], '1496747611176-843222e1e57c'),
+            P('casaca-bomber', 'Casaca bomber', 'casacas', 'joven', 149.9, 189.9, ['ol', 'ng'], '1551028719-00167b16eac5', { best: 1 }),
+            P('casaca-rompevientos', 'Rompevientos ligero', 'casacas', 'adulto', 169.9, 0, ['az', 'ng'], '1556821840-3a63f95609a7', { isNew: 1 }),
+            P('zapatilla-urbana', 'Zapatilla urbana', 'calzado', 'adulto', 189.9, 0, ['bl', 'ng'], '1542291026-7eec264c27ff', { best: 1 }),
+            P('zapatilla-run', 'Zapatilla running', 'calzado', 'joven', 159.9, 199.9, ['ng', 'rj'], '1491553895911-0055eca6402d'),
+            P('zapatilla-kids', 'Zapatilla kids', 'calzado', 'nino', 99.9, 0, ['bl', 'az'], '1560769629-975ec94e6a86'),
+            P('gorra-snapback', 'Gorra snapback', 'gorras', 'adulto', 39.9, 0, ['ng', 'az'], '1576871337632-b9aef4c17ab9', { isNew: 1 }),
+            P('gorra-kids', 'Gorra kids', 'gorras', 'nino', 29.9, 0, ['rj', 'az'], '1576871337632-b9aef4c17ab9'),
+            P('cinturon-cuero', 'Cinturón de cuero', 'accesorios', 'adulto', 59.9, 0, ['mr', 'ng'], '1624222247344-550fb60583dc'),
+            P('mochila-urbana', 'Mochila urbana', 'accesorios', 'joven', 89.9, 0, ['ng', 'gr'], '1553062407-98eeb64c6a62'),
+        ];
+        const DESC = { polos: 'Algodón suave y cómodo para el día a día.', camisas: 'Corte limpio, fácil de combinar con todo.', pantalones: 'Cómodo para moverte y con buen calce.', casacas: 'Abrigo ligero para días frescos.', calzado: 'Suela flexible y buen soporte para caminar todo el día.', gorras: 'Ajustable, con visera curva.', accesorios: 'El detalle que completa tu look.' };
+        const GUIDE = { adulto: ['Pecho (cm)', { S: '88–94', M: '96–102', L: '104–110', XL: '112–118', XXL: '120–126' }], joven: ['Pecho (cm)', { XS: '80–84', S: '86–90', M: '92–96', L: '98–102' }], nino: ['Altura (cm)', { 4: '104', 6: '116', 8: '128', 10: '140', 12: '152', 14: '164' }] };
+        const shoeGuide = sizes => ['Largo del pie (cm)', Object.fromEntries(sizes.map(s => [s, (s / 1.5 - 1.5).toFixed(1)]))];
+
+        /* ============ UTILIDADES ============ */
+        const IC = { bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>', search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>', arrow: '<path d="M5 12h14m-7-7 7 7-7 7"/>', truck: '<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="18.5" r="2"/>', refresh: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>', shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' };
+        const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+        const PH = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500"><rect width="100%" height="100%" fill="#F9F7F5"/></svg>');
+        const im = (s, a, c) => `<img src="${s}" alt="${a}" loading="lazy" class="${c}" onerror="this.onerror=null;this.src=PH">`;
+        const money = n => `${CUR} ${n.toFixed(2)}`;
+        const catName = id => (CATS.find(c => c[0] === id) || [])[1];
+        const ageName = id => (AGES.find(a => a[0] === id) || [])[1];
+        const byId = id => PRODUCTS.find(p => p.id === id);
+        const off = p => Math.round(100 - p.price / p.old * 100);
+        const $ = s => document.querySelector(s);
+        const app = $('#app');
+        const waLink = t => `https://wa.me/${WA}?text=${encodeURIComponent(t)}`;
+
+        /* ============ CARRITO (se guarda en el navegador) ============ */
+        let cart = (() => { try { return JSON.parse(localStorage.getItem('mx_cart')) || []; } catch { return []; } })();
+        const totals = () => { const sub = cart.reduce((s, l) => s + byId(l.id).price * l.qty, 0); return { sub, ship: !sub || sub >= FREE ? 0 : SHIP, get total() { return this.sub + this.ship; }, count: cart.reduce((s, l) => s + l.qty, 0) }; };
+        function saveCart() { try { localStorage.setItem('mx_cart', JSON.stringify(cart)); } catch { } renderCart(); }
+
+        function renderCart() {
+            const t = totals(), b = $('#badge');
+            b.textContent = t.count; b.classList.toggle('hidden', !t.count);
+            if (!cart.length) {
+                $('#cart-body').innerHTML = `<p class="py-20 text-center text-sm text-grey-dark">Tu carrito está vacío.<br>Elige una prenda y su talla para empezar.</p>`;
+                $('#cart-foot').innerHTML = `<a href="#/catalogo" data-act="close" class="btn btn-p w-full">Ver catálogo</a>`; return;
+            }
+            $('#cart-body').innerHTML = cart.map((l, i) => {
+                const p = byId(l.id); return `
+    <div class="flex gap-4 border-b border-grey-light py-5">
+      <a href="#/producto/${p.id}" data-act="close" class="h-28 w-24 shrink-0 overflow-hidden bg-surface">${im(p.imgs[0], p.n, 'h-full w-full object-cover')}</a>
+      <div class="flex-1 text-sm">
+        <p class="font-oswald text-lg uppercase tracking-wide">${p.n}</p>
+        <p class="text-grey-dark">Talla ${l.size} / ${p.colors[l.color][0]}</p>
+        <div class="mt-3 flex items-center justify-between">
+          <div class="flex items-center border border-grey-light"><button data-act="dec" data-v="${i}" class="px-3 py-1" aria-label="Quitar uno">−</button><span class="w-6 text-center">${l.qty}</span><button data-act="inc" data-v="${i}" class="px-3 py-1" aria-label="Agregar uno">+</button></div>
+          <b>${money(p.price * l.qty)}</b>
+        </div>
+        <button data-act="del" data-v="${i}" class="mt-2 text-xs text-grey-dark underline">Eliminar</button>
+      </div>
+    </div>`;
+            }).join('');
+            const falta = FREE - t.sub;
+            const msg = 'Hola, quiero hacer este pedido:\n' + cart.map(l => { const p = byId(l.id); return `• ${l.qty} x ${p.n} (talla ${l.size}, ${p.colors[l.color][0]}) - ${money(p.price * l.qty)}`; }).join('\n') + `\nTotal: ${money(t.total)}`;
+            $('#cart-foot').innerHTML = `
+    <p class="mb-4 text-xs ${falta > 0 ? 'text-grey-dark' : 'font-bold text-success'}">${falta > 0 ? `Te faltan ${money(falta)} para el envío gratis` : 'Tu pedido tiene envío gratis'}</p>
+    <div class="space-y-1 text-sm"><div class="flex justify-between"><span>Subtotal</span><span>${money(t.sub)}</span></div><div class="flex justify-between"><span>Envío</span><span>${t.ship ? money(t.ship) : 'Gratis'}</span></div><div class="flex justify-between pt-3 font-oswald text-2xl uppercase"><span>Total</span><span>${money(t.total)}</span></div></div>
+    <a href="${waLink(msg)}" target="_blank" rel="noopener" class="btn btn-d mt-5 w-full">Pedir por WhatsApp</a>`;
+        }
+        const openCart = (o = true) => { $('#drawer').classList.toggle('translate-x-full', !o); $('#overlay').classList.toggle('hidden', !o); document.body.style.overflow = o ? 'hidden' : ''; };
+
+        /* ============ COMPONENTES ============ */
+        const head = (eyebrow, title, desc, link) => `
+  <div class="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+    <div class="max-w-2xl"><span class="mb-4 block text-xs font-bold uppercase tracking-[0.2em] text-premium">${eyebrow}</span><h2 class="h-title text-5xl md:text-6xl">${title}</h2></div>
+    ${desc ? `<p class="max-w-sm text-base font-light leading-relaxed tracking-wide text-grey-dark md:text-right">${desc}</p>` : ''}
+    ${link ? `<a href="${link}" class="btn btn-o self-start md:self-end">Ver todo</a>` : ''}
+  </div>`;
+
+        const card = p => `
+  <a href="#/producto/${p.id}" class="group block">
+    <div class="relative aspect-[4/5] overflow-hidden border border-grey-light bg-surface">
+      ${im(p.imgs[0], p.n, 'h-full w-full object-cover transition-transform duration-700 group-hover:scale-105')}
+      ${p.old ? `<span class="absolute left-0 top-4 bg-error px-3 py-1 font-space-mono text-[10px] font-bold tracking-widest text-white">-${off(p)}%</span>` : p.isNew ? `<span class="absolute left-0 top-4 bg-dark px-3 py-1 font-space-mono text-[10px] font-bold uppercase tracking-widest text-white">Nuevo</span>` : ''}
+    </div>
+    <div class="pt-4">
+      <p class="eyebrow">${catName(p.cat)} / ${ageName(p.age)}</p>
+      <h3 class="mt-1 font-oswald text-xl uppercase tracking-wide transition-colors group-hover:text-premium-hover">${p.n}</h3>
+      <p class="mt-1 text-sm"><b class="font-semibold">${money(p.price)}</b>${p.old ? ` <s class="ml-1 text-grey-mid">${money(p.old)}</s>` : ''}</p>
+      <div class="mt-3 flex gap-1.5">${p.colors.map(c => `<i title="${c[0]}" class="size-3.5 rounded-full border border-grey-light" style="background:${c[1]}"></i>`).join('')}</div>
+    </div>
+  </a>`;
+        const grid = list => `<div class="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4">${list.map(card).join('')}</div>`;
+
+        /* ============ VISTAS ============ */
+        function Home() {
+            const ageImg = { nino: 'polo-kids', joven: 'casaca-bomber', adulto: 'camisa-oxford' };
+            const ben = [['truck', 'Envío', `Despacho en 24-48 horas. Gratis desde ${CUR} ${FREE}.`], ['refresh', 'Cambios', '7 días para cambiar la talla, sin complicaciones.'], ['shield', 'Pago seguro', 'Tarjeta, transferencia o pago contra entrega.'], ['chat', 'Ayuda', 'Atención por WhatsApp: tallas, stock y tu pedido.']];
+            const steps = [['Elige', 'Explora el catálogo por edad o categoría y escoge tu prenda.'], ['Elige tu talla', 'Consulta la guía de tallas y selecciona la tuya sin errores.'], ['Haz tu pedido', 'Agrégalo al carrito y confírmalo por WhatsApp o en la web.'], ['Recíbelo', 'Lo preparamos en 24-48 horas y lo enviamos a tu casa.']];
+            return `
+  <section class="relative h-[calc(100svh-5rem)] min-h-[520px] w-full overflow-hidden">
+    ${im(u('1617137968427-85924c800a22'), 'Mistikax ropa para hombre', 'absolute inset-0 h-full w-full object-cover object-top')}
+    <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 px-6 text-center">
+      <h1 class="mb-6 font-montserrat text-7xl font-extrabold uppercase tracking-tighter text-white drop-shadow-2xl md:text-8xl">Mistikax</h1>
+      <p class="mb-12 max-w-3xl text-xl font-medium leading-relaxed text-white/90 drop-shadow-lg md:text-2xl">Ropa y calzado para hombre. Para niños, jóvenes y adultos, en todas las tallas.</p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="#/catalogo" class="border border-white/20 bg-white/10 px-10 py-5 text-xs font-bold uppercase tracking-[0.2em] text-white backdrop-blur-md transition-all hover:border-white/40 hover:bg-white/20">Ver catálogo</a>
+        <a href="#/catalogo?sale=1" class="border border-white px-10 py-5 text-xs font-bold uppercase tracking-[0.2em] text-white transition-all hover:bg-white hover:text-dark">Ofertas</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="border-b border-grey-light bg-offwhite py-24">
+    <div class="mx-auto max-w-[1400px] px-6">
+      ${head('Para todas las edades', 'Compra por edad', 'Cada grupo tiene sus propias tallas y modelos.')}
+      <div class="flex flex-col border border-grey-light bg-white lg:h-[640px] lg:flex-row">
+        ${AGES.map((a, i) => {
+                const p = byId(ageImg[a[0]]); return `
+        <a href="#/catalogo?age=${a[0]}" class="group relative h-[340px] flex-1 overflow-hidden border-b border-grey-light transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] last:border-0 lg:h-auto lg:border-b-0 lg:border-r lg:hover:flex-[2]">
+          ${im(p.imgs[0], a[1], 'absolute inset-0 h-full w-full object-cover')}
+          <div class="absolute inset-0 bg-dark/30 transition-colors duration-700 group-hover:bg-dark/15"></div>
+          <span class="absolute right-6 top-6 font-oswald text-6xl font-light text-white/50">0${i + 1}</span>
+          <div class="absolute inset-x-0 bottom-0 p-8">
+            <div class="max-w-lg border-l-2 border-premium bg-dark/10 p-6 pl-6 backdrop-blur-md">
+              <span class="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-premium">${a[2]}</span>
+              <h3 class="font-oswald text-4xl font-medium uppercase tracking-tight text-white">${a[1]}</h3>
+              <p class="mt-3 max-w-sm text-sm font-light leading-relaxed text-white/90 lg:max-h-0 lg:overflow-hidden lg:opacity-0 lg:transition-all lg:duration-700 lg:group-hover:max-h-24 lg:group-hover:opacity-100">Polos, camisas, pantalones, calzado y más en tallas para ${a[1].toLowerCase()}. Ver colección.</p>
+            </div>
+          </div>
+        </a>`;
+            }).join('')}
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-surface py-24">
+    <div class="mx-auto max-w-[1400px] px-6">
+      ${head('Categorías', 'Qué encontrarás', 'Polos, camisas, pantalones, casacas, calzado, gorras y accesorios.')}
+      <div class="grid grid-cols-2 border-l border-t border-grey-light md:grid-cols-4">
+        ${CATS.map(c => {
+                const p = PRODUCTS.find(x => x.cat === c[0]), n = PRODUCTS.filter(x => x.cat === c[0]).length; return `
+        <a href="#/catalogo?cat=${c[0]}" class="group relative aspect-square overflow-hidden border-b border-r border-grey-light">
+          ${im(p.imgs[0], c[1], 'h-full w-full object-cover transition-transform duration-700 group-hover:scale-105')}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+          <div class="absolute bottom-0 w-full p-5 text-white"><h3 class="font-oswald text-2xl font-medium uppercase tracking-wide">${c[1]}</h3><span class="font-space-mono text-[10px] uppercase tracking-widest text-white/70">${n} modelos</span></div>
+        </a>`;
+            }).join('')}
+        <a href="#/catalogo" class="flex aspect-square flex-col items-center justify-center gap-3 border-b border-r border-grey-light bg-white transition-colors hover:bg-premium-light">
+          <span class="font-oswald text-2xl uppercase tracking-wide">Ver todo</span>${ic('arrow')}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1400px] px-6 py-24">
+    ${head('Favoritos', 'Más vendidos', '', '#/catalogo')}
+    ${grid(PRODUCTS.filter(p => p.best).slice(0, 4))}
+  </section>
+
+  <section class="w-full bg-surface text-dark">
+    <div class="grid grid-cols-1 border-l border-t border-grey-light md:grid-cols-2 lg:grid-cols-4">
+      <div class="relative flex flex-col justify-between overflow-hidden border-b border-r border-grey-light bg-[#4A3728] p-8 text-white md:p-12 lg:col-span-2">
+        <div>
+          <div class="mb-6 flex items-center gap-2"><div class="size-2 rounded-full bg-white"></div><span class="font-space-mono text-xs uppercase tracking-widest">Calidad</span></div>
+          <h3 class="mb-6 font-oswald text-3xl font-semibold uppercase tracking-tight">Calidad que se nota</h3>
+          <p class="max-w-md text-lg font-light leading-relaxed">Tejidos de algodón, lino y viscosa. Costuras reforzadas y revisión de calidad prenda por prenda.</p>
+        </div>
+      </div>
+      ${ben.slice(0, 2).map(b => `<div class="flex flex-col border-b border-r border-grey-light bg-surface p-8 md:p-12"><span class="mb-auto text-premium-hover">${ic(b[0], 28)}</span><h3 class="mb-3 mt-10 font-oswald text-xl font-semibold uppercase tracking-[0.1em]">${b[1]}</h3><p class="text-sm font-light leading-relaxed text-dark/70">${b[2]}</p></div>`).join('')}
+      ${ben.slice(2).map(b => `<div class="flex flex-col border-b border-r border-grey-light bg-surface p-8 md:p-12"><span class="mb-auto text-premium-hover">${ic(b[0], 28)}</span><h3 class="mb-3 mt-10 font-oswald text-xl font-semibold uppercase tracking-[0.1em]">${b[1]}</h3><p class="text-sm font-light leading-relaxed text-dark/70">${b[2]}</p></div>`).join('')}
+      <a href="#/info/tallas" class="group relative h-[260px] overflow-hidden border-b border-r border-grey-light md:col-span-2">
+        ${im(u('1620799140408-edc6dcb6d633'), 'Calce perfecto', 'h-full w-full object-cover')}
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+        <h3 class="absolute bottom-0 left-0 p-8 font-oswald text-3xl font-semibold uppercase leading-tight tracking-tight text-white">Garantía de calce perfecto<br><span class="text-base font-light normal-case tracking-normal text-white/80">Mira la guía de tallas</span></h3>
+      </a>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1400px] px-6 py-24">
+    ${head('Recién llegado', 'Novedades', '', '#/catalogo?sort=new')}
+    ${grid(PRODUCTS.filter(p => p.isNew).slice(0, 4))}
+  </section>
+
+  <section class="border-y border-grey-light py-24">
+    <div class="mx-auto max-w-[1200px] px-6">
+      <div class="mb-16 text-center"><h2 class="mb-4 text-4xl font-light tracking-tight md:text-5xl">Compra en 4 pasos</h2><p class="text-lg font-light tracking-wide text-grey-dark">Del catálogo a tu puerta: comprar es así de fácil</p></div>
+      <div class="grid grid-cols-1 border-l border-t border-dark md:grid-cols-2 lg:grid-cols-4">
+        ${steps.map((s, i) => `<div class="flex flex-col border-b border-r border-dark bg-white p-8"><span class="mb-8 border-b border-dark pb-4 font-space-mono text-[10px] font-bold uppercase tracking-widest text-dark/60">( 0${i + 1} / 04 )</span><h3 class="mb-4 font-oswald text-3xl font-medium uppercase leading-[0.95] tracking-tighter">${s[0]}</h3><p class="text-sm leading-relaxed text-grey-dark">${s[1]}</p></div>`).join('')}
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-[1200px] px-6 py-24">
+    <div class="flex flex-col gap-12 md:flex-row md:gap-24">
+      <div class="md:w-1/3">
+        <h2 class="mb-6 text-3xl font-light leading-[1.1] tracking-tight md:text-4xl">Preguntas frecuentes <span class="block font-serif text-2xl italic text-grey-dark md:text-3xl">para comprar en Mistikax</span></h2>
+        <p class="text-sm leading-relaxed text-grey-dark">Respuestas sobre tallas, envíos, cambios y formas de pago.</p>
+      </div>
+      <div class="divide-y divide-grey-light border-y border-grey-light md:w-2/3">
+        ${[['¿Cómo elijo mi talla y qué pasa si no me queda?', 'Cada producto tiene su guía de tallas. Si no te queda, cambias la talla dentro de los 7 días escribiéndonos por WhatsApp.'], ['¿Cuánto tarda el envío y cuánto cuesta?', `Preparamos tu pedido en 24-48 horas. El envío es gratis desde ${CUR} ${FREE}; por debajo cuesta ${CUR} ${SHIP}. El plazo de entrega depende de tu ciudad.`], ['¿Qué formas de pago aceptan?', 'Tarjeta, transferencia y pago contra entrega según tu zona. También puedes pedir por WhatsApp y te guiamos paso a paso.']].map(f => `
+        <details class="group py-7"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-medium transition-colors hover:text-premium-hover">${f[0]}<span class="text-2xl font-light text-grey-mid group-open:rotate-45">+</span></summary><p class="mt-3 max-w-xl text-sm leading-relaxed text-grey-dark">${f[1]}</p></details>`).join('')}
+      </div>
+    </div>
+  </section>`;
+        }
+
+        function Catalog(q) {
+            const f = { cat: q.get('cat') || '', age: q.get('age') || '', size: q.get('size') || '', max: q.get('max') || '', q: q.get('q') || '', sale: q.get('sale') || '', sort: q.get('sort') || '' };
+            const base = PRODUCTS.filter(p => (!f.cat || p.cat === f.cat) && (!f.age || p.age === f.age) && (!f.max || p.price <= +f.max) && (!f.q || (p.n + ' ' + catName(p.cat)).toLowerCase().includes(f.q.toLowerCase())) && (!f.sale || p.old));
+            const sizeOpts = [...new Set(base.flatMap(p => p.sizes))].sort((a, b) => (isNaN(a) || isNaN(b)) ? String(a).localeCompare(b) : a - b);
+            const list = base.filter(p => !f.size || p.sizes.includes(f.size));
+            if (f.sort === 'asc') list.sort((a, b) => a.price - b.price); else if (f.sort === 'desc') list.sort((a, b) => b.price - a.price); else if (f.sort === 'new') list.sort((a, b) => (b.isNew || 0) - (a.isNew || 0));
+            const title = f.q ? `"${f.q}"` : f.sale ? 'Ofertas' : [f.cat && catName(f.cat), f.age && ageName(f.age)].filter(Boolean).join(' / ') || 'Todo el catálogo';
+            const opt = (k, v, l) => `<button data-act="set" data-v="${k}:${v}" class="block w-full border-l-2 px-3 py-2 text-left text-sm transition-colors ${f[k] === v ? 'border-dark bg-premium-light font-semibold' : 'border-transparent hover:bg-surface'}">${l}</button>`;
+            const active = f.cat || f.age || f.size || f.max || f.q || f.sale;
+            return `
+  <div class="mx-auto max-w-[1400px] px-6 py-12">
+    <p class="eyebrow mb-4"><a href="#/" class="hover:text-dark">Inicio</a> / Catálogo</p>
+    <h1 class="h-title text-5xl md:text-6xl">${title}</h1>
+    <p class="mt-3 text-sm text-grey-dark">${list.length} producto${list.length === 1 ? '' : 's'}</p>
+    <div class="mt-8 flex items-center justify-between gap-3 border-y border-grey-light py-4">
+      <button data-act="filters" class="btn btn-o !py-2.5 lg:hidden">Filtros</button>
+      ${active ? `<button data-act="clear" class="text-sm underline">Limpiar filtros</button>` : '<span></span>'}
+      <label class="flex items-center gap-3 text-sm">Ordenar
+        <select data-sel="sort" class="border border-grey-light bg-white px-3 py-2">${[['', 'Destacados'], ['new', 'Novedades'], ['asc', 'Precio: menor a mayor'], ['desc', 'Precio: mayor a menor']].map(o => `<option value="${o[0]}" ${f.sort === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>
+      </label>
+    </div>
+    <div class="mt-10 grid gap-10 lg:grid-cols-[15rem_1fr]">
+      <aside id="filters" class="hidden space-y-8 lg:block">
+        <div><h3 class="eyebrow mb-3">Edad</h3>${AGES.map(a => opt('age', a[0], a[1])).join('')}</div>
+        <div><h3 class="eyebrow mb-3">Categoría</h3>${CATS.map(c => opt('cat', c[0], c[1])).join('')}</div>
+        <div><h3 class="eyebrow mb-3">Talla</h3><div class="flex flex-wrap gap-2">${sizeOpts.map(s => `<button data-act="set" data-v="size:${s}" class="chip ${f.size === s ? 'on' : ''}">${s}</button>`).join('') || '<p class="text-sm text-grey-dark">Sin tallas</p>'}</div></div>
+        <div><h3 class="eyebrow mb-4">Precio máximo: <span id="maxlbl" class="text-dark">${f.max ? money(+f.max) : 'sin límite'}</span></h3><input type="range" min="50" max="200" step="10" value="${f.max || 200}" data-sel="max" aria-label="Precio máximo"></div>
+      </aside>
+      <div>${list.length ? grid(list) : `<div class="py-24 text-center"><p class="font-oswald text-3xl uppercase">No encontramos productos</p><p class="mt-2 text-grey-dark">Prueba quitando algún filtro o buscando otra palabra.</p><button data-act="clear" class="btn btn-d mt-6">Limpiar filtros</button></div>`}</div>
+    </div>
+  </div>`;
+        }
+
+        let sel = { id: '', size: '', color: 0, qty: 1, img: 0, err: false };
+        function Product(id) {
+            const p = byId(id); if (!p) return NotFound();
+            if (sel.id !== id) sel = { id, size: p.sizes.length === 1 ? p.sizes[0] : '', color: 0, qty: 1, img: 0, err: false };
+            const rel = PRODUCTS.filter(x => x.id !== p.id && (x.cat === p.cat || x.age === p.age)).slice(0, 4);
+            const acc = (t, b) => `<details class="group border-b border-grey-light py-5"><summary class="flex cursor-pointer list-none items-center justify-between font-oswald text-lg uppercase tracking-wide">${t}<span class="text-2xl font-light text-grey-mid group-open:rotate-45">+</span></summary><p class="mt-3 text-sm leading-relaxed text-grey-dark">${b}</p></details>`;
+            return `
+  <div class="mx-auto max-w-[1400px] px-6 py-10">
+    <p class="eyebrow mb-8"><a href="#/" class="hover:text-dark">Inicio</a> / <a href="#/catalogo?cat=${p.cat}" class="hover:text-dark">${catName(p.cat)}</a> / ${p.n}</p>
+    <div class="grid gap-12 md:grid-cols-2">
+      <div class="flex flex-col-reverse gap-3 sm:flex-row">
+        ${p.imgs.length > 1 ? `<div class="flex gap-2 sm:flex-col">${p.imgs.map((s, i) => `<button data-act="img" data-v="${i}" class="size-20 overflow-hidden border ${sel.img === i ? 'border-dark' : 'border-grey-light'}">${im(s, p.n, 'h-full w-full object-cover')}</button>`).join('')}</div>` : ''}
+        <div class="relative aspect-[4/5] flex-1 overflow-hidden border border-grey-light bg-surface">${im(p.imgs[sel.img], p.n, 'h-full w-full object-cover')}${p.old ? `<span class="absolute left-0 top-4 bg-error px-3 py-1 font-space-mono text-[10px] font-bold tracking-widest text-white">-${off(p)}%</span>` : ''}</div>
+      </div>
+      <div>
+        <p class="eyebrow">${catName(p.cat)} / ${ageName(p.age)}</p>
+        <h1 class="mt-2 font-oswald text-5xl font-medium uppercase leading-[0.95] tracking-tight">${p.n}</h1>
+        <p class="mt-4 text-2xl font-semibold">${money(p.price)}${p.old ? ` <s class="ml-2 text-lg font-normal text-grey-mid">${money(p.old)}</s>` : ''}</p>
+        <p class="mt-4 font-light leading-relaxed text-grey-dark">${DESC[p.cat]}</p>
+
+        <h3 class="eyebrow mt-8">Color: <span class="text-dark">${p.colors[sel.color][0]}</span></h3>
+        <div class="mt-3 flex gap-2">${p.colors.map((c, i) => `<button data-act="color" data-v="${i}" title="${c[0]}" aria-label="${c[0]}" class="size-10 rounded-full border-2 p-0.5 ${sel.color === i ? 'border-dark' : 'border-grey-light'}"><i class="block size-full rounded-full border border-grey-light" style="background:${c[1]}"></i></button>`).join('')}</div>
+
+        <div class="mt-8 flex items-center justify-between"><h3 class="eyebrow">Talla</h3>${p.cat !== 'gorras' && p.cat !== 'accesorios' ? `<button data-act="guide" class="text-sm underline">Guía de tallas</button>` : ''}</div>
+        <div class="mt-3 flex flex-wrap gap-2">${p.sizes.map(s => `<button data-act="size" data-v="${s}" class="chip ${sel.size === s ? 'on' : ''}">${s}</button>`).join('')}</div>
+        ${sel.err ? `<p class="mt-3 text-sm font-semibold text-error" role="alert">Elige una talla para continuar.</p>` : ''}
+
+        <div class="mt-8 flex gap-3">
+          <div class="flex items-center border border-dark"><button data-act="qty" data-v="-1" class="px-4 py-3" aria-label="Menos">−</button><span class="w-8 text-center">${sel.qty}</span><button data-act="qty" data-v="1" class="px-4 py-3" aria-label="Más">+</button></div>
+          <button data-act="add" class="btn btn-p flex-1">Agregar al carrito</button>
+        </div>
+        <button data-act="buy" class="btn btn-d mt-3 w-full">Comprar por WhatsApp</button>
+
+        <div class="mt-10 border-t border-grey-light">
+          ${acc('Detalles', `${DESC[p.cat]} Disponible en ${p.colors.map(c => c[0].toLowerCase()).join(', ')}. Edita este texto con los materiales reales.`)}
+          ${acc('Cuidado de la prenda', 'Lavar a máquina con agua fría. No usar lejía. Planchar a temperatura media.')}
+          ${acc('Envíos y cambios', `Envío gratis desde ${CUR} ${FREE}. Tienes 7 días para cambiar la talla.`)}
+        </div>
+      </div>
+    </div>
+    <section class="mt-24">${head('Completa tu look', 'También te puede gustar')}${grid(rel)}</section>
+  </div>`;
+        }
+
+        const tbl = (h, rows) => `<table class="w-full text-sm"><thead><tr class="border-b border-dark text-left"><th class="py-2 font-space-mono text-[10px] uppercase tracking-widest">Talla</th><th class="py-2 font-space-mono text-[10px] uppercase tracking-widest">${h}</th></tr></thead><tbody>${Object.entries(rows).map(r => `<tr class="border-b border-grey-light"><td class="py-2 font-semibold">${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</tbody></table>`;
+        const INFO = {
+            envios: ['Envíos', `Preparamos tu pedido en 24 a 48 horas. El envío es gratis desde ${CUR} ${FREE}; por debajo de ese monto cuesta ${CUR} ${SHIP}. Edita estos datos según tu zona de reparto.`],
+            cambios: ['Cambios y devoluciones', 'Tienes 7 días desde que recibes tu pedido para cambiar la talla. La prenda debe estar sin uso y con etiquetas. Escríbenos por WhatsApp para coordinar.'],
+            nosotros: ['Nosotros', 'Mistikax es una tienda de ropa y calzado para hombre. Vestimos a niños, jóvenes y adultos con prendas cómodas y de buena calidad.'],
+            contacto: ['Contacto', 'Escríbenos por WhatsApp o a hola@mistikax.com. Te ayudamos con tallas, stock y tu pedido.'],
+        };
+        function Info(k) {
+            if (k === 'tallas') return `<div class="mx-auto max-w-[1200px] px-6 py-16"><p class="eyebrow mb-4">Ayuda</p><h1 class="h-title mb-4 text-5xl md:text-6xl">Guía de tallas</h1><p class="mb-12 max-w-xl text-grey-dark">Mide tu pecho, tu altura o el largo de tu pie y compara con la tabla. Si estás entre dos tallas, elige la mayor.</p>
+    <div class="grid gap-10 md:grid-cols-2">${AGES.map(a => `<div><h2 class="mb-3 font-oswald text-2xl uppercase">Ropa ${a[1].toLowerCase()}</h2>${tbl(GUIDE[a[0]][0], GUIDE[a[0]][1])}</div>`).join('')}
+    ${AGES.map(a => { const g = shoeGuide(sizesFor('calzado', a[0])); return `<div><h2 class="mb-3 font-oswald text-2xl uppercase">Calzado ${a[1].toLowerCase()}</h2>${tbl(g[0], g[1])}</div>`; }).join('')}</div></div>`;
+            const d = INFO[k]; if (!d) return NotFound();
+            return `<div class="mx-auto max-w-2xl px-6 py-20"><p class="eyebrow mb-4">Ayuda</p><h1 class="h-title text-5xl md:text-6xl">${d[0]}</h1><p class="mt-6 text-lg font-light leading-relaxed text-grey-dark">${d[1]}</p><a href="${waLink('Hola, tengo una consulta')}" target="_blank" rel="noopener" class="btn btn-p mt-10">Escribir por WhatsApp</a></div>`;
+        }
+        const NotFound = () => `<div class="py-32 text-center"><h1 class="h-title text-5xl">No encontramos esta página</h1><a href="#/" class="btn btn-d mt-8">Ir al inicio</a></div>`;
+
+        /* ============ ROUTER (hash: #/catalogo?cat=polos&age=adulto) ============ */
+        let keepScroll = false;
+        function draw() {
+            const [path, qs] = (location.hash.slice(1) || '/').split('?');
+            const seg = path.split('/').filter(Boolean), q = new URLSearchParams(qs || ''), v = seg[0] || 'home';
+            app.innerHTML = v === 'home' ? Home() : v === 'catalogo' ? Catalog(q) : v === 'producto' ? Product(seg[1]) : v === 'info' ? Info(seg[1]) : NotFound();
+            document.title = (v === 'home' ? '' : (app.querySelector('h1')?.textContent || '') + ' | ') + 'MISTIKAX';
+            if (!keepScroll) scrollTo(0, 0); keepScroll = false;
+        }
+        function setParam(k, val) {
+            const p = new URLSearchParams(location.hash.split('?')[1] || '');
+            if (!location.hash.startsWith('#/catalogo')) [...p.keys()].forEach(x => p.delete(x));
+            (val && p.get(k) !== val) ? p.set(k, val) : p.delete(k);
+            keepScroll = true; location.hash = '/catalogo' + (p.toString() ? '?' + p : '');
+        }
+        const redraw = () => { keepScroll = true; draw(); };
+
+        /* ============ ACCIONES ============ */
+        const acts = {
+            cart: () => openCart(), close: () => openCart(false),
+            search: () => { $('#searchBar').classList.toggle('hidden'); $('#search input').focus(); },
+            menu: () => { const m = $('#mobileMenu'), o = m.classList.contains('hidden'); m.classList.toggle('hidden', !o); m.classList.toggle('flex', o); document.body.style.overflow = o ? 'hidden' : ''; },
+            set: v => { const i = v.indexOf(':'); setParam(v.slice(0, i), v.slice(i + 1)); },
+            clear: () => { location.hash = '/catalogo'; },
+            filters: () => $('#filters')?.classList.toggle('hidden'),
+            size: v => { sel.size = v; sel.err = false; redraw(); },
+            color: v => { sel.color = +v; redraw(); },
+            img: v => { sel.img = +v; redraw(); },
+            qty: v => { sel.qty = Math.max(1, sel.qty + +v); redraw(); },
+            add: () => {
+                if (!sel.size) { sel.err = true; redraw(); return; }
+                const l = cart.find(x => x.id === sel.id && x.size === sel.size && x.color === sel.color);
+                l ? l.qty += sel.qty : cart.push({ id: sel.id, size: sel.size, color: sel.color, qty: sel.qty });
+                saveCart(); openCart();
+            },
+            buy: () => {
+                if (!sel.size) { sel.err = true; redraw(); return; }
+                const p = byId(sel.id);
+                open(waLink(`Hola, quiero comprar: ${sel.qty} x ${p.n} (talla ${sel.size}, ${p.colors[sel.color][0]}) - ${money(p.price * sel.qty)}`), '_blank');
+            },
+            inc: i => { cart[i].qty++; saveCart(); },
+            dec: i => { cart[i].qty > 1 ? cart[i].qty-- : cart.splice(i, 1); saveCart(); },
+            del: i => { cart.splice(i, 1); saveCart(); },
+            guide: () => {
+                const p = byId(sel.id), g = p.cat === 'calzado' ? shoeGuide(p.sizes) : GUIDE[p.age];
+                $('#sg').innerHTML = `<h2 class="mb-4 font-oswald text-3xl font-light uppercase tracking-[0.05em]">Guía de tallas</h2>${tbl(g[0], g[1])}<p class="mt-3 text-xs text-grey-dark">Si estás entre dos tallas, elige la mayor. Ajusta estas medidas a tu stock real.</p><form method="dialog"><button class="btn btn-d mt-5 w-full">Cerrar</button></form>`;
+                $('#sg').showModal();
+            },
+        };
+        document.addEventListener('click', e => {
+            const t = e.target.closest('[data-act]'); if (t) acts[t.dataset.act]?.(t.dataset.v);
+            if (e.target.closest('#mobileMenu a')) acts.menu();
+        });
+        document.addEventListener('change', e => { const k = e.target.dataset.sel; if (k) setParam(k, k === 'max' && +e.target.value >= 200 ? '' : e.target.value); });
+        document.addEventListener('input', e => { if (e.target.dataset.sel === 'max') $('#maxlbl').textContent = +e.target.value >= 200 ? 'sin límite' : money(+e.target.value); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') openCart(false); });
+        $('#search').addEventListener('submit', e => { e.preventDefault(); const q = new FormData(e.target).get('q').trim(); $('#searchBar').classList.add('hidden'); location.hash = '/catalogo' + (q ? '?q=' + encodeURIComponent(q) : ''); });
+        addEventListener('hashchange', draw);
+
+        /* ============ INICIO ============ */
+        document.querySelectorAll('[data-ic]').forEach(el => el.innerHTML = ic(el.dataset.ic));
+        $('#mobileMenu').insertAdjacentHTML('beforeend',
+            [['Inicio', '#/'], ...AGES.map(a => ['Ropa de ' + a[1].toLowerCase(), '#/catalogo?age=' + a[0]]), ...CATS.map(c => [c[1], '#/catalogo?cat=' + c[0]]), ['Ofertas', '#/catalogo?sale=1'], ['Guía de tallas', '#/info/tallas'], ['Contacto', '#/info/contacto']]
+                .map(l => `<a href="${l[1]}" class="border-b border-grey-light pb-4 pt-3 text-xl font-light">${l[0]}</a>`).join(''));
+        $('#f-cats').innerHTML = CATS.map(c => `<li><a class="hover:text-white/70" href="#/catalogo?cat=${c[0]}">${c[1]}</a></li>`).join('');
+        $('#f-wa').href = waLink('Hola, tengo una consulta');
+        renderCart(); draw();
+    </script>
+</body>
+
+</html>

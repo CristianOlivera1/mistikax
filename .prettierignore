@@ -1,0 +1,11 @@
+node_modules
+.next
+.agents
+.claude
+.freebuff
+public
+storage
+*.html
+*.md
+pnpm-lock.yaml
+pnpm-workspace.yaml
