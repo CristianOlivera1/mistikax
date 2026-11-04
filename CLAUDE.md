@@ -8,7 +8,7 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 
 1. **English for all code.** Identifiers, types, file and folder names, database tables and columns, environment variables, branch names, comments, and commit messages are English. Spanish is only for user-facing copy and business content.
 2. **No comments by default.** Add one only when it explains a non-obvious *why*: a browser workaround, a security decision, a data invariant, or a surprising third-party behavior. Never narrate what the code does, never leave commented-out code, and never add JSDoc that repeats the types.
-3. **Supabase is a Postgres host only.** Use Drizzle ORM over the database connection. Do not add Supabase Auth, Storage, Realtime, Edge Functions, or `@supabase/supabase-js`.
+3. **Supabase provides Postgres and Auth.** Use Drizzle ORM for application data and Supabase Auth through `@supabase/ssr` for identities and sessions. Do not add Supabase Storage, Realtime, or Edge Functions.
 4. **Images are local.** Committed content images live in `public/images`, brand logos stay in `public/svg`, and runtime uploads live in the configured upload directory on disk. Never add Supabase Storage, S3, Cloudinary, or remote image URLs to production data.
 5. **UI stack is fixed.** Use shadcn/ui primitives, Tailwind CSS v4, and Iconify icons for application UI. Vendored shadcn components may keep their internal `lucide-react` imports; do not add another icon set or use lucide icons in application code.
 6. **TypeScript strict.** No `any`, no non-null assertions to silence errors, no `@ts-ignore`, and no disabled lint rules. Fix the type or validate the boundary with Zod.
@@ -21,7 +21,9 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 | --- | --- |
 | `dashboard.html` | Admin prototype: hash router, inline Tailwind, seed data in `localStorage`, Spanish UI |
 | `client.html` | Storefront prototype: hash router, product catalog, cart drawer, WhatsApp checkout |
-| `src/app/` | Next.js 16 app foundation: root layout, themes, store placeholder, admin placeholder, and login |
+| `src/app/` | Next.js 16 app: root layout, themes, store placeholder, admin shell with Resumen, catalog, sales/content placeholders, and login |
+| `src/features/dashboard/` | Typed fixtures and queries behind the admin Resumen; replaced by database queries in phase 4 |
+| `src/features/catalog/` | Product, category and inventory fixtures, queries, schemas and admin components; replaced by database queries in phase 4 |
 | `public/svg/` | Brand logos |
 | `storage/uploads/` | Local runtime uploads; empty until phase 4 |
 | `plan.md` | Migration roadmap and target architecture |
@@ -38,9 +40,9 @@ The prototypes are a visual reference, not an architecture reference. Their help
 | Components | shadcn/ui, Radix primitives, `cva` | Installed |
 | Icons | Iconify, local `lucide` subset | Installed |
 | Database | Supabase Postgres, Drizzle ORM, `postgres.js` | Planned |
-| Auth | Better Auth with Drizzle adapter and roles | Planned |
+| Auth | Supabase Auth with `@supabase/ssr`; roles in `profiles` | Planned |
 | Validation | Zod; React Hook Form on client forms | Installed |
-| Admin UI | TanStack Table, Recharts | Planned |
+| Admin UI | TanStack Table, Recharts | Recharts installed; TanStack Table planned |
 | Feedback | Sonner, cmdk | Installed |
 | Tests | Vitest, Testing Library, Playwright | Planned |
 | Package manager | pnpm | Installed |
@@ -59,7 +61,7 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 - Named exports everywhere except Next.js special files (`page.tsx`, `layout.tsx`, `error.tsx`, `loading.tsx`, `route.ts`).
 - No TypeScript `enum`. Use `as const` objects and union types.
 - `params` and `searchParams` are Promises in Next.js 16. Await them before use.
-- `src/proxy.ts` is the Next.js 16 request boundary. Use it only for coarse redirects; always re-check the session and role in the admin layout and in every protected server action.
+- `src/proxy.ts` is the Next.js 16 request boundary. Refresh the Supabase Auth session there and use it only for coarse redirects; always re-check the session and role in the admin layout and in every protected server action.
 - Guard server-only modules with `import "server-only"`: database clients, auth helpers, upload utilities, and anything that reads secrets.
 - URL search params are the source of truth for filters, tabs, and pagination. Do not mirror them in client state.
 - Validate every mutation twice: in the form with Zod, and again in the server action before touching the database.
@@ -75,9 +77,10 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 - Products are archived, not deleted, when they have order history. Slugs are stable; if a slug must change, add a redirect.
 - Use UTC timestamps in the database and format dates in `es-PE` at the edge.
 - `DATABASE_URL` and `DIRECT_URL` are server-only. Use the pooled connection at runtime with `prepare: false`; use the direct connection only for migrations.
-- The Supabase anon key is not needed and must not be added. Database access is server-side only; application authorization is the security boundary.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are public by design; any table they can reach through the Data API must have RLS enabled and explicit grants. `SUPABASE_SECRET_KEY`, `DATABASE_URL`, and `DIRECT_URL` are server-only, bypass RLS, and must never reach the browser.
+- Supabase Auth is the identity provider. Validate the session with `getUser()` in server code; `getSession()` is not an authorization check and `user_metadata` is user-editable. Read the role from `public.profiles` and enforce it server-side.
 - The dashboard has two roles for now: `admin` and `editor`. Admin manages everything; editor manages catalog, content, and media. Enforce them server-side in layouts and actions; hiding a button is not authorization.
-- Environment variables are validated with Zod in `src/lib/env.ts`. Never expose a secret with a `NEXT_PUBLIC_` prefix.
+- Environment variables are validated with Zod in `src/lib/env.ts`. Never expose a secret with a `NEXT_PUBLIC_` prefix; only the Supabase URL and publishable key are public.
 - Uploads must validate MIME type and magic bytes, reject path traversal, generate a random file name, enforce a size limit, and never trust the original filename. Store uploads outside `public` and serve them through the media route.
 - Local uploads require a persistent filesystem. Do not deploy to a serverless target where the upload directory is read-only or ephemeral.
 
@@ -117,5 +120,5 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 - No `any`, no suppressed errors, no unused code.
 - Responsive at 375px, 768px, and 1280px; keyboard accessible.
 - Data validated at the boundary; authorization checked server-side.
-- Images are local; no Supabase services beyond Postgres.
+- Images are local; Supabase is used only for Postgres and Auth.
 - `pnpm lint` and `pnpm build` pass.

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" role="img" aria-label="Gorra snapback">
+  <rect width="480" height="600" fill="#f4f0ea"/>
+  <circle cx="382" cy="126" r="118" fill="#e8ded2" opacity=".55"/>
+  <path d="M0 470c120-58 236-58 480 0v130H0z" fill="#e8ded2" opacity=".35"/>
+  <path d="M150 314c0-92 180-92 180 0z" fill="#1f1f1f"/><path d="M150 314h214c18 0 30 10 30 26H146c0-16 4-26 4-26z" fill="#1f1f1f"/><path d="M240 230v84" stroke="#f2eee9" stroke-opacity=".2" stroke-width="2"/><path d="M178 306c18-52 106-52 124 0" fill="none" stroke="#f2eee9" stroke-opacity=".2" stroke-width="2"/>
+  <text x="32" y="518" font-family="Helvetica, Arial, sans-serif" font-size="11" letter-spacing="4" fill="#9a8270">MISTIKAX</text>
+  <text x="32" y="550" font-family="Georgia, serif" font-size="25" fill="#171717">Gorra snapback</text>
+  <text x="32" y="575" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#9a8270">Gorras · Adultos</text>
+</svg>

@@ -18,11 +18,18 @@ export function BrandMark({ className, framed = false }: BrandMarkProps) {
   );
 
   if (!framed) {
-    return <div className={cn("inline-flex items-center", className)}>{logo}</div>;
+    return (
+      <div className={cn("inline-flex items-center", className)}>{logo}</div>
+    );
   }
 
   return (
-    <div className={cn("inline-flex rounded-lg bg-background px-3 py-2", className)}>
+    <div
+      className={cn(
+        "bg-background inline-flex rounded-lg px-3 py-2",
+        className,
+      )}
+    >
       {logo}
     </div>
   );

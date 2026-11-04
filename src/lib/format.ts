@@ -11,10 +11,20 @@ const dateFormatter = new Intl.DateTimeFormat("es-PE", {
   timeZone: "America/Lima",
 });
 
+const dayMonthFormatter = new Intl.DateTimeFormat("es-PE", {
+  day: "numeric",
+  month: "short",
+  timeZone: "America/Lima",
+});
+
 export function formatMoney(cents: number): string {
   return moneyFormatter.format(cents / 100);
 }
 
 export function formatDate(value: Date | string): string {
   return dateFormatter.format(new Date(value));
+}
+
+export function formatDayMonth(value: Date | string): string {
+  return dayMonthFormatter.format(new Date(value));
 }

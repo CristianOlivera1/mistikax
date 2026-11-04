@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" role="img" aria-label="Rompevientos ligero">
+  <rect width="480" height="600" fill="#f4f0ea"/>
+  <circle cx="382" cy="126" r="118" fill="#e8ded2" opacity=".55"/>
+  <path d="M0 470c120-58 236-58 480 0v130H0z" fill="#e8ded2" opacity=".35"/>
+  <path d="M170 178l42-28h56l42 28 34 66-38 18-20-34v202H194V228l-20 34-38-18z" fill="#1f1f1f"/><path d="M212 150l28 34 28-34" fill="none" stroke="#f2eee9" stroke-width="3"/><path d="M240 184v220" stroke="#f2eee9" stroke-opacity=".5" stroke-width="2"/><path d="M206 286h28M246 286h28" stroke="#f2eee9" stroke-opacity=".28" stroke-width="2"/>
+  <text x="32" y="518" font-family="Helvetica, Arial, sans-serif" font-size="11" letter-spacing="4" fill="#9a8270">MISTIKAX</text>
+  <text x="32" y="550" font-family="Georgia, serif" font-size="25" fill="#171717">Rompevientos ligero</text>
+  <text x="32" y="575" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#9a8270">Casacas · Adultos</text>
+</svg>

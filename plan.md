@@ -1,6 +1,6 @@
 # Plan de migración — Mistikax
 
-> **Estado:** Fase 0 completada. `dashboard.html` y `client.html` siguen siendo la referencia visual; la base de Next.js vive en `src/` y el login visual ya está creado. La autenticación real y Supabase siguen pendientes.
+> **Estado:** Fase 2 completada. `dashboard.html` y `client.html` siguen siendo la referencia visual; el panel ya tiene shell, Resumen y catálogo con fixtures. La autenticación real (Supabase Auth) y la base de datos siguen pendientes.
 
 Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 con componentes reutilizables, y deja preparada la migración futura de `client.html`. La prioridad es que cada pantalla del admin quede cubierta, que el código sea mantenible y que la tienda pueda reutilizar la misma base técnica.
 
@@ -9,8 +9,8 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | Tema | Decisión |
 | --- | --- |
 | Estructura | Una sola app Next.js con route groups `(store)` y `(admin)`; un despliegue |
-| Base de datos | Supabase solo como Postgres, con Drizzle ORM y migraciones en el repo |
-| Autenticación | Better Auth + Drizzle, con dos roles por ahora: `admin` y `editor` |
+| Base de datos | Supabase Postgres, con Drizzle ORM y migraciones en el repo |
+| Autenticación | Supabase Auth con `@supabase/ssr` y cookies, con dos roles por ahora: `admin` y `editor` |
 | UI | shadcn/ui + Tailwind CSS v4 + Iconify |
 | Temas | Dos temas sobre una misma base de primitivas: admin denso y tienda editorial |
 | Imágenes | Locales: contenido en `public/images`, logos en `public/svg`, subidas en `storage/uploads`; sin Supabase Storage |
@@ -24,8 +24,8 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | # | Fase | Resultado | ¿Necesita Supabase? |
 | --- | --- | --- | --- |
 | 0 | Fundaciones | Completada: Next en `src/`, shadcn, temas, fuentes, login visual, scripts | No |
-| 1 | Shell y kit del admin | Navegación, layout, primitivas y Resumen con fixtures | No |
-| 2 | Catálogo (UI) | Productos, editor, categorías e inventario con fixtures | No |
+| 1 | Shell y kit del admin | Completada: navegación, layout, primitivas y Resumen con fixtures | No |
+| 2 | Catálogo (UI) | Completada: productos, editor, categorías e inventario con fixtures | No |
 | 3 | Ventas y contenido (UI) | Pedidos, clientes, descuentos, CMS y ajustes con fixtures | No |
 | 4 | Catálogo de punta a punta | Drizzle, seed, CRUD real y subidas locales | Sí |
 | 5 | Ventas y contenido de punta a punta | Pedidos, transacciones, CMS y ajustes persistentes | Sí |
@@ -48,7 +48,7 @@ Las fases 0 a 3 se pueden ejecutar sin tocar Supabase. La fase 4 es el primer pu
 
 Ambos usan Tailwind por CDN, fuentes de Google por `<link>`, un router basado en `location.hash` y plantillas de string con `innerHTML`. `dashboard.html` persiste todo en `localStorage`; `client.html` mantiene el carrito en el navegador. No hay backend, autenticación ni tests de los prototipos.
 
-La Fase 0 ya dejó en `src/app` el layout raíz, los dos temas, las fuentes locales, el placeholder de tienda, el placeholder de admin y `/login`. El shell del panel y las pantallas de negocio siguen en la fase 1 y siguientes.
+La Fase 0 dejó en `src/app` el layout raíz, los dos temas, las fuentes locales, el placeholder de tienda, el placeholder de admin y `/login`. La Fase 1 añadió el shell del panel y el Resumen. La Fase 2 añadió el catálogo (productos, categorías e inventario) con fixtures; las pantallas de ventas y contenido llegan en la Fase 3.
 
 La migración es una reescritura de la capa de presentación, no un copiado de HTML. Los strings con `${...}` no se pueden trasladar a JSX sin convertirlos en componentes y sin eliminar los riesgos de inyección.
 
@@ -76,7 +76,7 @@ La migración es una reescritura de la capa de presentación, no un copiado de H
 - `Restablecer datos`: elimina el seed de `localStorage`. En producción se reemplaza por migraciones y un seed controlado.
 - `Exportar JSON`: puede convertirse en una exportación real desde la base; no se implementa hasta la fase 5.
 - Equipo sin autenticación: la tabla de miembros existe, pero los roles no protegen nada. Se conecta en la fase 6.
-- Imágenes base64 y URLs de Unsplash: se reemplazan por archivos locales en la fase 4.
+- Imágenes base64 y URLs de Unsplash: el catálogo ya usa SVG locales; las subidas y el resto de assets locales llegan en las fases 4 y 7.
 - Datos diarios simulados: el gráfico del Resumen se calcula desde pedidos reales, no desde una tabla `daily_sales`.
 
 ---
@@ -88,7 +88,7 @@ Request
   ├─ /(store)/...    → StoreLayout    → feature components → queries
   ├─ /(admin)/...    → auth guard     → AdminLayout      → feature components
   │                                                   → server actions → db
-  └─ /(auth)/login   → LoginForm     → Better Auth
+  └─ /(auth)/login   → LoginForm     → Supabase Auth
 ```
 
 ### Estructura de carpetas
@@ -144,8 +144,6 @@ mistikax/
 │  │  │     │  └─ faqs/page.tsx
 │  │  │     ├─ media/page.tsx
 │  │  │     └─ settings/page.tsx
-│  │  ├─ api/
-│  │  │  └─ auth/[...all]/route.ts
 │  │  └─ media/[...path]/route.ts   # sirve uploads locales
 │  ├─ components/
 │  │  ├─ ui/                        # shadcn generado; no se bifurca
@@ -176,18 +174,22 @@ mistikax/
 │  │  │  ├─ catalog.ts
 │  │  │  ├─ orders.ts
 │  │  │  ├─ content.ts
-│  │  │  ├─ auth.ts
+│  │  │  ├─ profiles.ts
 │  │  │  └─ index.ts                # agregador de esquema para Drizzle Kit
 │  │  ├─ migrations/
 │  │  ├─ client.ts
 │  │  └─ seed.ts
 │  ├─ lib/
-│  │  ├─ auth.ts
+│  │  ├─ auth.ts                    # requireUser / requireRole
 │  │  ├─ env.ts
 │  │  ├─ format.ts
 │  │  ├─ money.ts
 │  │  ├─ uploads.ts
-│  │  └─ utils.ts
+│  │  ├─ utils.ts
+│  │  └─ supabase/
+│  │     ├─ client.ts
+│  │     ├─ server.ts
+│  │     └─ admin.ts
 │  ├─ hooks/
 │  ├─ proxy.ts                      # convención de Next 16; solo redirecciones
 │  └─ types/
@@ -287,7 +289,7 @@ Implementación:
 | `recharts` | Gráfico de ventas del Resumen | Pendiente |
 | `@tanstack/react-table` | Tablas con orden y paginación cuando haga falta | Pendiente |
 | `drizzle-orm`, `postgres`, `drizzle-kit` | Base de datos y migraciones | Pendiente |
-| `better-auth` | Autenticación y sesiones | Pendiente |
+| `@supabase/supabase-js`, `@supabase/ssr` | Auth, sesiones con cookies y Admin API | Pendiente (Fase 6) |
 | `date-fns` | Fechas y rangos | Pendiente |
 | `vitest`, `@testing-library/react`, `playwright` | Pruebas | Pendiente |
 
@@ -374,7 +376,7 @@ Drizzle define el esquema en `src/db/schema`. Las migraciones viven en el repo; 
 | `site_settings` | `id`, `store_name`, `description`, `email`, `whatsapp`, `address`, `currency`, `low_stock_threshold`, `shipping_cents`, `free_shipping_threshold_cents`, `lead_time`, `payment flags`, `transfer_instructions`, `primary_color`, `accent_color` | Fila única; alimenta la tienda y el admin |
 | `home_content` | `announcement_enabled`, `announcement_text`, `hero_title`, `hero_subtitle`, `hero_cta`, `hero_link`, `hero_image`, `updated_at` | Fila única |
 | `home_sections` | `id`, `kind`, `enabled`, `position` | Orden de las secciones de la portada |
-| `users`, `sessions`, `accounts`, `verifications` | Las genera Better Auth | Se añade `role` al usuario y el plugin de administración |
+| `profiles` | `id` (uuid, FK `auth.users`), `full_name`, `role`, `active`, `created_at` | Rol `admin`/`editor`; se crea con un trigger al registrarse; el email vive en `auth.users` |
 
 Decisiones del modelo:
 
@@ -389,11 +391,14 @@ Decisiones del modelo:
 
 ### Acceso a Supabase
 
-- Para Supabase solo se usan `DATABASE_URL` (pooler) y `DIRECT_URL` (conexión directa para migraciones).
+- Los datos de la app usan `DATABASE_URL` (pooler) y `DIRECT_URL` (conexión directa para migraciones).
+- Supabase Auth usa `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` mediante `@supabase/ssr`; las sesiones viven en cookies gestionadas por el servidor.
+- `SUPABASE_SECRET_KEY` solo se usa en el servidor para operaciones de equipo (listar, invitar o desactivar usuarios). Nunca llega al cliente.
 - Driver `postgres.js`; con el pooler de transacciones, `prepare: false`.
-- No se usa la API REST de Supabase, ni la anon key, ni RLS como frontera de seguridad. Toda consulta pasa por el servidor.
+- No se usa la API REST de Supabase para datos de negocio. Toda consulta pasa por Drizzle en el servidor.
 - El rol de base de datos debe tener los privilegios mínimos necesarios; no se expone la cadena de conexión al cliente.
-- Better Auth crea sus tablas en la misma base. Sus migraciones se generan y versionan junto con las de Drizzle.
+- Supabase Auth gestiona `auth.users` y sus sesiones. La app mantiene `public.profiles` con rol y estado; el rol se lee de la base, nunca de `user_metadata`.
+- RLS se habilita en las tablas expuestas como defensa en profundidad; la frontera de autorización sigue siendo el servidor.
 - El seed inicial traduce los datos del prototipo a inglés, centavos y rutas locales de imagen. No se migran imágenes base64.
 
 ### Variables de entorno previstas
@@ -403,8 +408,9 @@ Decisiones del modelo:
 | `DATABASE_URL` | Conexión pooled de Postgres en runtime; `prepare: false` | Servidor | 4 |
 | `DIRECT_URL` | Conexión directa solo para migraciones | Servidor | 4 |
 | `UPLOAD_DIR` | Directorio de subidas locales; ruta absoluta en producción | Servidor | 4 |
-| `BETTER_AUTH_SECRET` | Firma de sesiones de Better Auth | Servidor | 6 |
-| `BETTER_AUTH_URL` | URL base de autenticación | Servidor | 6 |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase; cliente y servidor | Público | 6 |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave publicable para Auth y sesiones; RLS protege los datos expuestos | Público | 6 |
+| `SUPABASE_SECRET_KEY` | Admin API para gestionar usuarios del equipo; nunca en el cliente | Servidor | 6 |
 | `CART_COOKIE_SECRET` | Firma de la cookie del carrito de invitado | Servidor | 7 |
 
 `.env.example` se versiona con placeholders; los valores reales viven en `.env` y nunca se registran en git. La Fase 0 añadió la excepción `!.env.example` para que la plantilla sí se versione.
@@ -444,19 +450,27 @@ Decisiones del modelo:
 
 **Salida:** todas las rutas del admin navegan con placeholders; el Resumen se ve como el prototipo; responsive en 375, 768 y 1280; navegación por teclado; sin `localStorage`.
 
-### Fase 2 — Catálogo: UI completa
+**Estado:** completada. El layout incluye sidebar de 240px, drawer móvil, topbar, breadcrumbs, command palette, notificaciones y menú de usuario. El Resumen calcula KPIs y series desde fixtures tipados, con el rango en `searchParams`. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan. `FilterBar`, `TabsNav`, `FormField`, `SwitchField` y `ConfirmDialog` se extraen en las fases 2 y 3, cuando sus pantallas las usan.
+
+**Siguiente:** Fase 2, catálogo con datos de prueba (completada).
+
+### Fase 2 — Catálogo: UI completa · Completada
 
 **Objetivo:** migrar las pantallas de catálogo a componentes con datos de prueba tipados.
 
 - Lista de productos con búsqueda, filtros por categoría, edad y estado, y paginación; filtros en `searchParams`.
 - Acciones de fila: duplicar y eliminar con confirmación.
-- Editor de producto con las siete secciones del prototipo: información, imágenes, stock por talla, colores, SEO, publicación, organización y precio.
+- Editor de producto con las ocho secciones del prototipo: información, imágenes, stock por talla, colores, SEO, publicación, organización y precio.
 - Formulario nuevo/edición con validación de cliente; el guardado queda pendiente de la fase 4.
 - Categorías con tabla y diálogo de creación/edición; el tipo de talla controla las tallas disponibles.
 - Inventario con stock bajo y detalle por talla.
 - Imágenes de fixtures locales; se eliminan las URLs remotas.
 
 **Salida:** paridad visual y de estados con `dashboard.html`; todos los formularios validan; no hay HTML strings, `dangerouslySetInnerHTML` ni persistencia simulada.
+
+**Estado:** completada. El catálogo usa 18 productos y 7 categorías de fixture; la lista filtra por texto, categoría, edad y estado con paginación en `searchParams`; el editor valida con Zod y React Hook Form en sus ocho secciones; categorías tiene diálogo de creación/edición; inventario muestra el stock por talla y las alertas. Las 19 imágenes de producto son SVG locales. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
+
+**Siguiente:** Fase 3, ventas y contenido.
 
 ### Fase 3 — Ventas y contenido: UI completa
 
@@ -479,7 +493,7 @@ Decisiones del modelo:
 **Objetivo:** conectar el catálogo a Supabase Postgres y habilitar la subida local de imágenes.
 
 - Crear el proyecto de Supabase y las variables `DATABASE_URL` y `DIRECT_URL`.
-- Añadir `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `UPLOAD_DIR` y `CART_COOKIE_SECRET` al `.env.example`; las usarán las fases 5 a 7.
+- Añadir `UPLOAD_DIR` y `CART_COOKIE_SECRET` al `.env.example`; las variables de Supabase Auth ya están en la plantilla para la Fase 6.
 - Implementar `src/db/schema` para catálogo, colores, imágenes y medios; generar la migración inicial.
 - Crear `src/db/seed.ts` con los datos del prototipo, precios en centavos y rutas locales.
 - Sustituir las fixtures por `features/<dominio>/queries.ts` con Drizzle.
@@ -489,7 +503,7 @@ Decisiones del modelo:
 - Implementar la galería de medios, el selector de imágenes y las miniaturas del producto.
 - Reemplazar cualquier imagen remota o base64 por assets locales.
 
-**Salida:** un producto se crea, edita, archiva y duplica y persiste tras recargar; el stock por talla se guarda; las categorías respetan sus constraints; una imagen subida sigue disponible tras reiniciar; `pnpm build` pasa; no se añade `@supabase/supabase-js`.
+**Salida:** un producto se crea, edita, archiva y duplica y persiste tras recargar; el stock por talla se guarda; las categorías respetan sus constraints; una imagen subida sigue disponible tras reiniciar; `pnpm build` pasa; no se usa Supabase Storage ni la API REST de datos.
 
 ### Fase 5 — Ventas, contenido y ajustes de punta a punta
 
@@ -507,9 +521,11 @@ Decisiones del modelo:
 
 **Objetivo:** cerrar el admin y aplicar permisos reales.
 
-- Configurar Better Auth con el adaptador Drizzle, email/contraseña y sesiones en la base.
-- Conectar el `/login` existente y crear el primer usuario administrador mediante un seed controlado.
-- Proteger `(admin)/admin/layout.tsx`; `proxy.ts` solo redirige de forma gruesa.
+- Instalar `@supabase/supabase-js` y `@supabase/ssr`; las variables ya están en `.env.example`.
+- Crear los clientes de Supabase (navegador, servidor con cookies y admin con la clave secreta solo en servidor); `proxy.ts` refresca la sesión en cada request.
+- Crear la migración de `public.profiles` (`id` uuid con FK a `auth.users`, `full_name`, `role`, `active`) y el trigger que crea el perfil al registrarse; el primer administrador se promueve con un seed/SQL controlado.
+- Conectar el `/login` existente con `signInWithPassword` mediante una Server Action y agregar el cierre de sesión.
+- Proteger `(admin)/admin/layout.tsx` con `getUser()` y el rol de `profiles`; `proxy.ts` solo redirige de forma gruesa.
 - Aplicar la matriz de roles en layouts y acciones:
 
 | Rol | Acceso |
@@ -517,7 +533,8 @@ Decisiones del modelo:
 | `admin` | Todo, incluido pedidos, clientes, descuentos, equipo y ajustes |
 | `editor` | Catálogo, contenido y medios |
 
-- Conectar la tabla de equipo: listar usuarios, cambiar rol y desactivar; las invitaciones por email quedan para una fase posterior.
+- No autorizar con `getSession()` ni con `user_metadata`; el rol se lee de `profiles` en cada request protegido.
+- Conectar la tabla de equipo: listar perfiles, cambiar rol y desactivar con la Admin API; invitaciones y recuperación por email quedan para cuando haya SMTP configurado en Supabase.
 - Mantener dos roles mientras el panel sea pequeño; si más adelante se necesita separar ventas, se añade `sales` con su propia migración de permisos.
 - Ocultar navegación no permitida, pero repetir la autorización en el servidor.
 
@@ -593,11 +610,11 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 ## 8. Riesgos y restricciones
 
 1. **Imágenes locales vs. hosting serverless.** Escribir en disco requiere un servidor Node con volumen persistente. Vercel u otro serverless no sirve para subidas locales. Si más adelante se cambia a un bucket, habrá que migrar el servicio de medios; no se hace ahora porque el requisito es almacenamiento local.
-2. **Supabase solo como base.** Sin Supabase Auth no hay RLS por usuario; la autorización se implementa en el servidor con Better Auth y se prueba por rol. No se expone la conexión a la base ni se usa la anon key.
+2. **Supabase para datos y Auth.** La autorización se implementa en el servidor con el rol de `public.profiles` y se prueba por rol; RLS queda como defensa en profundidad. La clave secreta y la cadena de conexión nunca llegan al cliente, y la autorización no depende de `user_metadata`.
 3. **Dos temas.** La disciplina de tokens es obligatoria. Mezclar colores o tipografías entre admin y tienda rompe la coherencia y duplica estilos.
 4. **Prototipos con datos simulados.** El seed no es dato de producción. Los precios del prototipo son decimales; la base usa centavos. Las fechas y los estados deben mapearse explícitamente.
-5. **Next.js 16.** `middleware.ts` está reemplazado por `proxy.ts`; `params` y `searchParams` son promesas. La documentación de shadcn y Better Auth debe verificarse contra las versiones instaladas en la fase correspondiente.
-6. **Invitaciones de equipo.** Enviar correos requiere un proveedor externo; en la primera versión se crean usuarios y se cambian roles desde el panel, sin email.
+5. **Next.js 16.** `middleware.ts` está reemplazado por `proxy.ts`; `params` y `searchParams` son promesas. La documentación de shadcn y Supabase Auth debe verificarse contra las versiones instaladas en la fase correspondiente.
+6. **Invitaciones y correos.** Supabase Auth puede enviar invitaciones y recuperación de contraseña, pero requieren SMTP configurado; en la primera versión se crean usuarios y se cambian roles desde el panel, sin email.
 7. **Pagos.** El alcance es WhatsApp/pedido pendiente. Una pasarela de pago es otro proyecto.
 8. **Cuentas de cliente.** No existen en el prototipo. Se añaden después; no se diseñan ahora para no bloquear el checkout de invitado.
 9. **Contenido de páginas.** El editor del prototipo es texto plano. No se migra a HTML libre; si se necesita rich text, se planifica con un editor y sanitización.
@@ -609,7 +626,7 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 - Cuentas de cliente, wishlist y programa de puntos.
 - Multi-tienda, multi-moneda o i18n.
 - Modo oscuro y selector de tema.
-- Supabase Auth, Storage, Realtime o Edge Functions.
+- Supabase Storage, Realtime o Edge Functions.
 - Envío de emails e invitaciones.
 - Analítica, marketing y SEO avanzado más allá de lo listado.
 
@@ -628,11 +645,11 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 
 ## 11. Próximo paso
 
-La Fase 0 ya está completada. Continuar con la Fase 1, sin tocar Supabase:
+Las fases 1 y 2 están completadas. Continuar con la Fase 3, sin tocar Supabase:
 
-1. Construir el shell del admin: sidebar, topbar, breadcrumbs y command palette.
-2. Añadir las primitivas de presentación compartidas.
-3. Montar el Resumen con KPIs, gráfico y listas usando fixtures tipados.
-4. Revisar la paridad visual y responsive antes de seguir con el catálogo.
+1. Migrar pedidos, clientes, descuentos, contenido, medios y ajustes con fixtures tipados.
+2. Reemplazar los placeholders de `/admin/orders`, `/admin/customers`, `/admin/coupons`, `/admin/content/*`, `/admin/media` y `/admin/settings`.
+3. Extraer los patrones compartidos que aparezcan al construir esas pantallas.
+4. Revisar la paridad visual con `dashboard.html` antes de conectar Supabase.
 
 Cuando se llegue a la Fase 4, se crea el proyecto de Supabase, se configura `DATABASE_URL`/`DIRECT_URL` y se genera la primera migración. Hasta entonces, el trabajo es UI, componentes y validación.

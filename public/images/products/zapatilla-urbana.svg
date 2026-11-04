@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 600" role="img" aria-label="Zapatilla urbana">
+  <rect width="480" height="600" fill="#ebeef3"/>
+  <circle cx="382" cy="126" r="118" fill="#d7dee8" opacity=".55"/>
+  <path d="M0 470c120-58 236-58 480 0v130H0z" fill="#d7dee8" opacity=".35"/>
+  <path d="M108 356c54-8 78 8 110 24 26 13 52 12 82 10 28-2 54 4 62 28 6 19-4 30-26 30H134c-28 0-44-16-42-40 2-22 8-46 16-52z" fill="#1f1f1f"/><path d="M118 386c62 6 96 8 144-2" fill="none" stroke="#f2eee9" stroke-opacity=".35" stroke-width="3"/><path d="M166 370l22 30M202 380l22 30M238 390l20 26" stroke="#f2eee9" stroke-opacity=".2" stroke-width="3"/><path d="M116 414h246" stroke="#f2eee9" stroke-opacity=".25" stroke-width="3"/>
+  <text x="32" y="518" font-family="Helvetica, Arial, sans-serif" font-size="11" letter-spacing="4" fill="#6a7789">MISTIKAX</text>
+  <text x="32" y="550" font-family="Georgia, serif" font-size="25" fill="#171717">Zapatilla urbana</text>
+  <text x="32" y="575" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#6a7789">Calzado · Adultos</text>
+</svg>
