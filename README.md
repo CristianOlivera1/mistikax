@@ -30,7 +30,8 @@ Current routes:
 - `/admin/content/home` — announcement, hero and home-section editor with preview
 - `/admin/content/pages`, `/admin/content/pages/new`, `/admin/content/pages/[id]` — page list and validated editor
 - `/admin/content/faqs` — FAQ list, edit dialog and ordering controls
-- `/admin/media` — local media grid with URL copy
+- `/admin/media` — local media grid, uploads and deletion for user files
+- `/media/[...path]` — serves uploaded files from `storage/uploads` with immutable caching
 - `/admin/settings?tab=general|shipping|payments|team|appearance` — tabbed settings forms and team overview
 
 ## Available scripts
@@ -42,6 +43,9 @@ pnpm start      # serve the production build
 pnpm lint       # run ESLint
 pnpm typecheck  # run TypeScript without emitting files
 pnpm format     # run Prettier and sort Tailwind classes
+pnpm db:generate # generate Drizzle migrations from the schema
+pnpm db:migrate  # apply Drizzle migrations to Supabase Postgres
+pnpm db:seed     # seed catalog fixtures, colors, images and stock
 ```
 
 ## Project structure
@@ -54,7 +58,8 @@ src/
 │  └─ (auth)/    # sign-in
 ├─ components/   # shadcn/ui, shared components, and area-specific shells
 ├─ features/     # domain components, queries, actions, and schemas
-├─ db/           # Drizzle schema (phase 4)
+├─ db/           # Drizzle schema, client, and seed
+├─ drizzle/      # generated migrations
 └─ lib/          # utilities, constants, and environment configuration
 ```
 
@@ -62,9 +67,9 @@ Local assets are in `public/images` and `public/svg`. Runtime uploads will be st
 
 ## Status
 
-Phases 1, 2 and 3 are complete: the Next.js foundation in `src/`, shadcn/ui, Tailwind v4, admin and storefront themes, local fonts, sign-in UI, admin shell (sidebar, top bar, breadcrumbs, and command palette), dashboard, catalog, orders, customers, coupons, content, media and settings with typed fixtures and validated forms.
+Phases 1–4 are complete: the admin panel foundation, catalog with real Supabase Postgres persistence (Drizzle schema, migrations and seed), product CRUD, archiving, duplication, inventory and category constraints, plus local media uploads served through `/media/[...path]`.
 
-Supabase Auth and the database will be connected in later phases. There is currently no session or database; orders and customers share a single fixture source, while persistent mutations, media uploads and order transitions are planned for phases 4 and 5.
+Orders, customers, coupons, CMS and settings still run on typed fixtures; order mutations, media uploads to real users, and auth/session enforcement are planned for phases 5–6. The catalog, media and inventory routes read from Postgres today.
 
 ## Documentation
 

@@ -30,8 +30,13 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | 4 | Catálogo de punta a punta | Drizzle, seed, CRUD real y subidas locales | Sí |
 | 5 | Ventas y contenido de punta a punta | Pedidos, transacciones, CMS y ajustes persistentes | Sí |
 | 6 | Auth y roles | Login, sesiones, permisos y equipo | Sí |
-| 7 | Tienda pública | Migración completa de `client.html` | Sí |
-| 8 | Calidad y salida | Tests, accesibilidad, rendimiento y checklist de lanzamiento | Sí |
+| 7 | Tienda: shell, footer y home | Shell de tienda, navegación, búsqueda y portada con datos reales | Sí (lectura del catálogo) |
+| 8 | Tienda: catálogo | `/catalogo` con filtros, orden, búsqueda y paginación | Sí (lectura) |
+| 9 | Tienda: producto | `/producto/[slug]` con galería, tallas, carrito y relacionados | Sí (lectura) |
+| 10 | Tienda: carrito | Cookie firmada, drawer y `/carrito` | Sí (lectura) |
+| 11 | Tienda: checkout | Formulario, pedido pendiente y WhatsApp | Sí (lectura y escritura) |
+| 12 | Tienda: páginas, guía y SEO | Páginas informativas, guía de tallas, FAQ, 404, SEO y sitemap | Sí (lectura) |
+| 13 | Calidad y salida | Tests, accesibilidad, rendimiento y checklist de lanzamiento | Yes |
 
 Las fases 0 a 3 se pueden ejecutar sin tocar Supabase. La fase 4 es el primer punto donde se conecta la base de datos.
 
@@ -116,10 +121,13 @@ mistikax/
 │  │  │  ├─ catalogo/page.tsx
 │  │  │  ├─ producto/[slug]/page.tsx
 │  │  │  ├─ carrito/page.tsx
-│  │  │  ├─ checkout/page.tsx
+│  │  │  ├─ checkout/
+│  │  │  │  ├─ page.tsx
+│  │  │  │  └─ exito/page.tsx
 │  │  │  ├─ paginas/[slug]/page.tsx
 │  │  │  ├─ guia-de-tallas/page.tsx
-│  │  │  └─ faq/page.tsx
+│  │  │  ├─ faq/page.tsx
+│  │  │  └─ not-found.tsx
 │  │  ├─ (admin)/
 │  │  │  └─ admin/
 │  │  │     ├─ layout.tsx
@@ -509,7 +517,7 @@ Decisiones del modelo:
 
 **Salida:** un producto se crea, edita, archiva y duplica y persiste tras recargar; el stock por talla se guarda; las categorías respetan sus constraints; una imagen subida sigue disponible tras reiniciar; `pnpm build` pasa; no se usa Supabase Storage ni la API REST de datos.
 
-**Estado:** en curso. `drizzle-orm`, `postgres` y `drizzle-kit` están instalados. La conexión a Supabase rechaza la contraseña de `DATABASE_URL` y `DIRECT_URL` con `28P01`; no se generaron ni aplicaron migraciones para no tocar una base que aún no se puede inspeccionar.
+**Estado:** completada. El esquema reside en `src/db/schema` (`categories`, `colors`, `products`, `product_colors`, `product_images`, `product_stock`, `media` con origen `catalog`/`upload`); las migraciones de Drizzle se aplicaron a Supabase y el seed está en `src/db/seed.mts`, reproducible con `pnpm db:seed`. Las queries de catálogo e inventario son async con Drizzle y `getStockStatus`/`getStockTotal` derivan del mapa de stock del producto. Las Server Actions de producto (crear, editar con slug inmutable, archivar, duplicar), categoría (crear, editar, borrar con restricción) y media (subida y borrado con imagen en uso) validan con Zod; los uploads van a `storage/uploads/YYYY/MM/<uuid>.<ext>` con MIME real y bloqueo de path traversal y se sirven por `app/media/[...path]/route.ts` con cache inmutable. `src/lib/env.ts` valida `DATABASE_URL` y `UPLOAD_DIR`; la Fase 7 mantiene el requisito de `CART_COOKIE_SECRET`. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
 
 ### Fase 5 — Ventas, contenido y ajustes de punta a punta
 
@@ -546,22 +554,83 @@ Decisiones del modelo:
 
 **Salida:** sin sesión, `/admin` redirige a `/login`; cada rol solo accede a lo suyo; las acciones rechazan roles indebidos; no hay secretos en el cliente.
 
-### Fase 7 — Tienda pública (`client.html`)
+### Fase 7 — Tienda: shell, footer y home · en curso
 
-**Objetivo:** migrar la tienda reutilizando la misma base de UI, datos y formato.
+**Objetivo:** montar el marco de la tienda con datos reales del catálogo y la portada completa del prototipo. La especificación de la tienda y sus decisiones está en la sección 7.
 
-- Home: hero, compra por edad, beneficios, pasos, destacados y FAQ.
-- Catálogo: filtros por edad, categoría, talla, precio y oferta; orden y búsqueda; URLs compartibles.
-- Producto: galería, selector de talla/color/cantidad, acordeones, relacionados y agregar al carrito.
-- Carrito: cookie firmada, drawer, progreso de envío gratis y actualización de cantidades.
-- Checkout: formulario validado, totales recalculados en servidor, creación de pedido pendiente y apertura de WhatsApp con el número de pedido.
-- Páginas informativas, guía de tallas, FAQ y 404.
-- SEO: metadata por producto/página, canonical, JSON-LD de producto y breadcrumbs, `sitemap.ts` y `robots.ts`.
-- Reemplazar el header/footer y todos los estilos inline por componentes y tokens.
+Las fases 7 a 12 corren en paralelo al trabajo del dashboard con reglas de convivencia: `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde al cierre de cada fase, revisión visual a 375, 768 y 1280, y sin editar los archivos en los que trabaja el dashboard (`features/*/queries.ts`, `db`, `media`). La Fase 7 y la 8 sólo requieren lectura de catálogo (Fase 4); la 11 además del servicio de pedidos de la Fase 5; la 12 el CMS de la Fase 5.
 
-**Salida:** paridad funcional y visual con `client.html`; los enlaces del prototipo funcionan como rutas; el checkout crea un pedido real; el admin lo ve; Lighthouse de accesibilidad y SEO en verde; las imágenes son locales.
+- `(store)/layout.tsx` con `.theme-store`, render dinámico y metadata pública; `AnnouncementBar` desde `home_content`; `StoreHeader` con logo, nav curada en `src/lib/nav.ts` (`STORE_NAV`), búsqueda hacia `/catalogo?q=...` y menú móvil a pantalla completa; `StoreFooter` con categorías activas, ayuda y contacto desde `site_settings`.
+- Portada por secciones en el orden y visibilidad de `home_sections`: hero, compra por edad, categorías, más vendidos, beneficios, novedades, pasos y FAQ (3 primeras).
+- Consultas de tienda de solo lectura en `features/catalog/store-queries.ts`: destacados, novedades, mejor vendido por grupo de edad y categorías con imagen representativa y conteo.
+- Estados vacíos y skeletons con la forma del grid; mientras la base de la Fase 4 no esté servible, la portada no se rompe.
 
-### Fase 8 — Calidad y salida
+**Salida:** portada navegable con paridad visual de `client.html`; header, footer y menú móvil responsive y accesibles por teclado.
+
+**Estado:** en curso. Implementados: `(store)/layout.tsx` con tema, anuncio, header con nav curada (`STORE_NAV` en `src/lib/nav.ts`), búsqueda desplegable y menú móvil (`store-header-actions.tsx`); `StoreFooter` con categorías activas, ayuda y contacto; home con hero, edades, categorías, más vendidos, beneficios, novedades, pasos y FAQ compuesto según `home_sections`; consultas de tienda en `features/catalog/store-queries.ts`; helper de WhatsApp en `src/lib/whatsapp.ts`; iconos de añadidos al subconjunto local; tokens `cacao` y `clay` en el tema tienda; `error.tsx` de tienda. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan. La verificación visual con datos está bloqueada por el gate de la Fase 4: las rutas dinámicas quedan pendientes y fallan tras el timeout de conexión (mismo comportamiento en `/admin/products`), así que la portada aún no se puede ver con productos. La fase queda a la espera de la base servible para cerrar su salida.
+
+**Objetivo:** listar el catálogo activo con filtros compartibles por URL.
+
+- `/catalogo` con filtros en `searchParams` (`category`, `age`, `size`, `max`, `q`, `sale`, `sort`, `page`), títulos dinámicos según filtros y contador de resultados.
+- `listStoreProducts` con filtrado y orden en SQL; opciones de talla derivadas de productos con stock; paginación de 24; estados vacío y de error; estado vacío con CTA para limpiar filtros.
+- Sidebar de filtros en desktop y desplegable controlado por botón en móvil; cada cambio actualiza la URL sin saltar el scroll y el resultado es compartible.
+- Rango del filtro de precio: límite máximo calculado del catálogo activo redondeado a decenas.
+
+**Salida:** un enlace generado con filtros reproduce exactamente la vista en otro navegador; los filtros combinan sin resultados fantasma; paginación y orden conservan los filtros activos.
+
+#### Fase 9 — Tienda: producto
+
+**Objetivo:** construir la ficha de producto y su selección de compra.
+
+- `/producto/[slug]` con `generateMetadata`, `notFound()` para slug inexistente y breadcrumb Inicio / Categoría / Producto.
+- Galería con miniaturas (más de una imagen cuando el producto tiene varias), etiqueta de descuento o "Nuevo" según `compare_at_cents`/`is_new`.
+- `ProductPurchasePanel`: color y talla con las sin stock deshabilitadas y stock disponible como techo de cantidad; error de talla con `role="alert"`; agregar al carrito por server action y abrir el drawer; botón de compra directa por WhatsApp sin crear pedido.
+- Acordeones: detalles desde la descripción del producto, cuidado literal, envíos y cambios con los umbrales de `site_settings`; dialog de guía de tallas por grupo de edad o calzado.
+- Relacionados: misma categoría o grupo de edad, nuevos primero, límite 4, sin incluirse a sí mismo.
+
+**Salida:** flujo de compra completo hasta el drawer con datos reales; sin stock no se puede agregar; metadata y JSON-LD de producto listos.
+
+#### Fase 10 — Tienda: carrito
+
+**Objetivo:** mover el carrito del navegador a una cookie firmada del servidor.
+
+- Cookie firmada `mistikax_cart` (diseño en la sección 7); acciones `addToCart`, `updateLineQty`, `removeLine`, `clearCart` con Zod y validación de stock.
+- `CartSheet` (drawer accesible) y `/carrito` compartiendo representación: líneas, cantidades, eliminar, no disponible, progreso de envío gratis y totales recalculados en servidor.
+- Comportamiento con catálogo mutable: precio nuevo se muestra, producto archivado o sin stock se marca y se puede quitar; vacío con CTA al catálogo.
+- Badge del header actualizado revalidando tras cada mutación.
+
+**Salida:** el carrito sobrevive reinicios y cierres de navegador; las mutaciones validan stock y producto; ninguna línea muestra precios desactualizados como totales.
+
+#### Fase 11 — Tienda: checkout y pedido pendiente
+
+**Objetivo:** convertir el checkout de WhatsApp en un pedido real persistido. Gate: servicio de pedidos de la Fase 5.
+
+- `/checkout` con `CheckoutForm` validado (Zod + RHF en cliente y de nuevo en la acción), métodos de pago según `site_settings` y resumen de totales del servidor.
+- Acción `createOrder` en transacción única tal como está diseñada en la sección 7; error de stock nombra la línea; en éxito se limpia el carrito y se navega a `/checkout/exito` con token HMAC y resumen, botón para reabrir WhatsApp y CTA al catálogo.
+- Mensaje de WhatsApp construido por el helper de la Fase 5; el cliente solo abre la URL recibida.
+- Regresión cruzada: el pedido nuevo aparece en `/admin/orders` como Pendiente con items, historial y nota; cancelarlo restaura el stock.
+
+**Salida:** de agregar al carrito a pedido pendiente visible en el admin, con stock decrementado y mensaje de WhatsApp correcto; recargar `/checkout/exito` sin token no muestra datos del pedido.
+
+#### Fase 12 — Tienda: páginas informativas, guía de tallas, FAQ y 404
+
+**Objetivo:** cerrar el mapa de contenidos de la tienda. Gate: CMS persistido de la Fase 5.
+
+- `/paginas/[slug]` con `getPublishedPage` (párrafos por línea en blanco, sin HTML), CTA de WhatsApp y `notFound()` si no está publicada; seed de `envios`, `cambios`, `nosotros`, `contacto`, `politica-de-privacidad` y `terminos-del-servicio`.
+- `/guia-de-tallas` con las 6 tablas de `size-guide.ts`; `/faq` con todas las preguntas en acordeón nativo; 404 de tienda con vuelta al inicio.
+
+**Salida:** todos los enlaces de header, footer y menú móvil tienen destino real; ninguna página muerta ni `href="#"`.
+
+**SEO, sitemap y verificación técnica (cierre de la Fase 12):**
+
+- Metadata y canonical por ruta según la sección 7; JSON-LD de `Product`, `BreadcrumbList` y `FAQPage`.
+- `sitemap.ts` con productos activos y páginas publicadas; `robots.ts` con `noindex` en carrito y checkout; verificación de Open Graph en ruta raíz.
+- Pago de deuda técnica: activos remotos faltantes reemplazados por locales; revisión visual de las vistas de tienda en los tres breakpoints; `pnpm lint`, `pnpm typecheck` y `pnpm build`.
+- Prueba end-to-end manual registrada en el checklist: home → catálogo filtrado → producto → agregar → checkout → pedido en el admin → cancelación y restauración de stock.
+
+**Salida de la Fase 12 (cierre de la tienda):** paridad funcional y visual con `client.html`; el checkout crea un pedido real que el admin gestiona; Lighthouse de accesibilidad y SEO en verde; imágenes locales; cero `innerHTML`, cero `localStorage` de carrito y cero URLs remotas.
+
+### Fase 13 — Calidad y salida
 
 **Objetivo:** dejar el proyecto verificable y desplegable.
 
@@ -577,7 +646,29 @@ Decisiones del modelo:
 
 ---
 
-## 7. Visión futura: migración de `client.html`
+## 7. Plan de la tienda pública (`client.html`)
+
+Este apartado define el inventario funcional de la tienda, el diseño del carrito y del checkout, y las decisiones cerradas para ejecutar la Fase 7. La tienda reutiliza la base técnica del admin (primitivas, tokens, validación, dominios, formato de dinero y fechas) sin compartir layout ni tema: `(store)` aplica `.theme-store`, sus URLs son públicas y en español para SEO.
+
+### Medición del prototipo
+
+`client.html` (49 KB, ~560 líneas) contiene: header fijo con nav curada, búsqueda desplegable y badge del carrito; menú móvil de pantalla completa; home de 7 secciones; catálogo con filtros de categoría, edad, talla, precio máximo, búsqueda y ofertas, más orden y estado vacío; página de producto con galería, colores, tallas, cantidad, acordeones, relacionados, guía de tallas en dialog y compra directa; carrito drawer con progreso de envío gratis; páginas informativas (`envios`, `cambios`, `nosotros`, `contacto`); guía de tallas con 6 tablas; FAQ; 404; footer.
+
+Mapeo de la configuración y el contenido del prototipo:
+
+| Prototipo | Destino en Next.js |
+| --- | --- |
+| `WA` | `site_settings.whatsapp` |
+| `FREE` / `SHIP` | `site_settings.free_shipping_threshold_cents` / `site_settings.shipping_cents` |
+| `CATS`, `AGES`, `C` (colores) | Tablas `categories`, enum `age_group`, tabla `colors` (Fase 4) |
+| `PRODUCTS`, `DESC` | Tablas `products`, `product_images`, `product_sizes`, `product_colors` |
+| `GUIDE`, `shoeGuide` | Constantes de contenido en `src/features/catalog/size-guide.ts`; copia editable en código, no en CMS |
+| Beneficios, pasos, textos `INFO` | Copia literal en componentes de tienda; `contacto` y demás se convierten en páginas del CMS |
+| FAQs de portada | Tabla `faqs` (las 3 primeras por `position`) |
+| Hero y barra de anuncio | `home_content` y `home_sections` (Fase 5) |
+| `localStorage['mx_cart']` | Cookie firmada `mistikax_cart` (servidor) |
+| `#/catalogo?cat=...` | `/catalogo?category=...` |
+| `#/info/tallas` | `/guia-de-tallas` |
 
 ### Rutas
 
@@ -588,13 +679,170 @@ Decisiones del modelo:
 | `#/producto/[id]` | `/producto/[slug]` |
 | Carrito en drawer | `/carrito` + `CartSheet` |
 | Pedido por WhatsApp | `/checkout` + pedido pendiente + WhatsApp |
-| `#/paginas/[id]` | `/paginas/[slug]` |
-| Guía de tallas | `/guia-de-tallas` |
-| FAQ / información | `/faq` y `/paginas/[slug]` |
+| `#/info/tallas` | `/guia-de-tallas` |
+| `#/info/{envios,cambios,nosotros,contacto}` | `/paginas/[slug]` (seed del CMS) |
+| FAQ | `/faq` y `/paginas/[slug]` |
+| Footer: política y términos | `/paginas/politica-de-privacidad` · `/paginas/terminos-del-servicio` (seed del CMS; en el prototipo son `href="#"`) |
 
-### Componentes
+- Los search params viven en la URL y son la única fuente de filtros: `category`, `age`, `size`, `max`, `q`, `sale`, `sort`, `page`. Los enlaces de portada, header y footer son URLs compartibles reales.
+- Los valores de `age` en la URL son los valores del enum en inglés (`kids`, `teens`, `adults`), no los prototipos `nino|joven|adulto`; las etiquetas visibles son españolas.
+- Los slugs de categoría y producto mantienen el texto del prototipo (`polos`, `camisas`, `jean-slim`): son contenido público y SEO.
 
-`StoreHeader`, `AnnouncementBar`, `StoreNav`, `MobileMenu`, `SearchBar`, `StoreFooter`, `Hero`, `AgeCollection`, `BenefitsBar`, `StepsSection`, `SectionHeading`, `ProductCard`, `ProductGrid`, `ProductGallery`, `SizeSelector`, `ColorSelector`, `QuantityStepper`, `AddToCartButton`, `CartSheet`, `CartLine`, `ShippingProgress`, `CheckoutForm`, `OrderSummary`, `SizeGuideTable`, `InfoPage`, `FaqAccordion`, `WhatsAppButton`, `Breadcrumbs`, `EmptyState`, `Pagination`.
+### Inventario por pantalla
+
+| Vista | Contenido medido | Datos | Fase |
+| --- | --- | --- | --- |
+| Header | Logo, nav curada (Inicio, 3 edades, 3 categorías, Ofertas, Contacto), búsqueda, badge y CTA de carrito | `categories` (slugs validados), `site_settings`, `home_content` (anuncio), conteo del carrito | 7 |
+| Menú móvil | Lista plana: inicio, edades, categorías, ofertas, guía, contacto | ídem | 7 |
+| Home: hero | Imagen a pantalla, título, subtítulo y 2 CTA | `home_content.hero_*` | 7 |
+| Home: compra por edad | 3 tarjetas expandibles con imagen de producto por edad | Mejor vendido activo por `age_group` | 7 |
+| Home: categorías | Grid de 7 categorías + "Ver todo", nº de modelos por categoría | `categories` + conteo de productos activos | 7 |
+| Home: más vendidos | 4 productos `is_best_seller` | queries de catálogo | 7 |
+| Home: beneficios | Bloque editorial: calidad + envío, cambios, pago, ayuda | copia literal + umbral de envío de `site_settings` | 7 |
+| Home: novedades | 4 productos `is_new` | queries de catálogo | 7 |
+| Home: pasos | "Compra en 4 pasos" literal | copia literal | 7 |
+| Home: FAQ | 3 preguntas con `details` nativo | `faqs` | 7 |
+| Catálogo | Breadcrumb, título dinámico, contador, filtros (desktop sidebar / móvil toggle), orden, grid, estado vacío | `listStoreProducts` con filtros, opciones de talla con stock | 8 |
+| Producto | Breadcrumb, galería, color, talla con stock, cantidad, agregar, compra directa, acordeones, relacionados, dialog de guía | `getStoreProduct(slug)`, imágenes, stock por talla, colores | 9 |
+| Carrito drawer / `/carrito` | Líneas con talla y color, pasos de cantidad, eliminar, progreso de envío gratis, totales, CTA checkout y WhatsApp | cookie del carrito + productos vigentes | 10 |
+| Checkout | Formulario, método de pago, totales recalculados, confirmación con número y mensaje de WhatsApp | acción `createOrder` | 11 |
+| Páginas informativas | Título y párrafos, CTA WhatsApp | `pages` con `status = published` | 12 |
+| Guía de tallas | 6 tablas: ropa y calzado por grupo de edad | `size-guide.ts` | 12 |
+| FAQ | Acordeón completo | `faqs` ordenado | 12 |
+| 404 de tienda | Mensaje y vuelta al inicio | — | 12 |
+| Página inexistente de producto/página | `not-found.tsx` de tienda | — | 12 |
+
+### Estructura de carpetas de la tienda
+
+La tienda escribe archivos nuevos y no reutiliza los módulos internos del admin. Cada capa tiene una única responsabilidad, igual que en el panel:
+
+```text
+src/
+├─ app/(store)/                    # solo rutas, layout, metadata y composición; cero lógica de dominio
+│  ├─ layout.tsx                   # .theme-store, fuentes, header/footer, AnnouncementBar
+│  ├─ page.tsx                     # compone secciones según home_sections
+│  ├─ catalogo/page.tsx            # Fase 8
+│  ├─ producto/[slug]/page.tsx     # Fase 9
+│  ├─ carrito/page.tsx             # Fase 10
+│  ├─ checkout/page.tsx             # Fase 11
+│  ├─ checkout/exito/page.tsx       # Fase 11
+│  ├─ paginas/[slug]/page.tsx      # Fase 12
+│  ├─ guia-de-tallas/page.tsx
+│  ├─ faq/page.tsx
+│  └─ not-found.tsx
+├─ components/store/               # presentación pura de tienda: no importa features ni db
+│  ├─ announcement-bar.tsx
+│  ├─ store-header.tsx
+│  ├─ store-header-actions.tsx     # "use client": búsqueda y menú móvil
+│  ├─ store-footer.tsx
+│  ├─ hero.tsx, age-collection.tsx, categories-grid.tsx
+│  ├─ benefits-block.tsx, steps-section.tsx, section-heading.tsx
+│  ├─ product-card.tsx, product-grid.tsx
+│  ├─ faq-accordion.tsx, breadcrumbs.tsx, pagination.tsx, empty-state-store.tsx
+├─ features/catalog/
+│  ├─ store-queries.ts             # server-only: lecturas publicables (nueva, separada de queries.ts del admin)
+│  ├─ size-guide.ts                # Fase 9/12: matrices de tallas (copia de negocio)
+├─ features/cart/                  # Fase 10
+│  ├─ cookie.ts                    # server-only: firmar, leer y escribir la cookie
+│  ├─ schema.ts                    # Zod de líneas y cookie v1
+│  ├─ actions.ts                   # server actions de mutación
+│  ├─ totals.ts                    # cálculo puro (Subtotal/Envío/Total); testable sin IO
+│  └─ components/                  # cart-sheet, cart-line, cart-quantity, shipping-progress
+├─ features/checkout/              # Fase 11
+│  ├─ schema.ts                    # Zod del formulario
+│  └─ components/                  # checkout-form (cliente), order-confirmation, whatsapp-button
+├─ features/orders/                # ya existe; Fase 11 añade createOrder en actions.ts
+├─ features/content/               # getPublishedPage / getFaqs (variantes de tienda en la Fase 12)
+└─ features/settings/              # getStoreSettings (Fase 11): whatsapp, envío, métodos de pago
+```
+
+Reglas de separación en la tienda:
+
+- `app/(store)` no consulta la base: solo llama a `features/<dominio>` y compone layouts.
+- `components/store` no importa `features` ni `db`; recibe datos por props. Los bloques de `components/store` no pueden llamar acciones server (misma regla que `components/admin`).
+- Las consultas de tienda viven separadas de las del admin: el admin lista borradores y archivados, la tienda solo publica activos con imagen y stock.
+- Todo lo que sea dinero o stock se calcula en funciones puras (`totals.ts`) probadas con Vitest en la Fase 13; la UI solo formatea con `formatMoney`.
+- Cada capa server-only lleva `import "server-only"`; el navegador nunca recibe secretos de cookie ni conexión a la base.
+- Formularios validados con Zod en cliente y de nuevo en la server action.
+
+### Componentes de la tienda y su capa
+
+| Componente | Capa | Render | Uso |
+| --- | --- | --- | --- |
+| `StoreHeader`, `AnnouncementBar`, `StoreNav`, `SearchBar`, `MobileMenu` | `components/store` | header cliente mínimo (toggles de búsqueda y menú); contenido server | equivalente al header del prototipo |
+| `StoreFooter` | `components/store` | servidor | footer con datos de settings y categorías |
+| `Hero`, `AgeCollection`, `CategoriesGrid`, `BenefitsBar`, `StepsSection`, `SectionHeading` | `components/store` | servidor | secciones del home |
+| `ProductCard`, `ProductGrid`, `ProductThumb` (reutilizada del admin) | `components/store` / `components/shared` | servidor | tarjetas en catálogo, home y relacionados |
+| `ProductGallery`, `ProductAccordions`, `RelatedGrid` | `features/catalog/components` | servidor | página de producto |
+| `ProductPurchasePanel` (compone `ColorSelector`, `SizeSelector`, `QuantityStepper`, `AddToCartForm`, `WhatsAppBuyButton`, error de talla) | `features/catalog/components` | cliente: es el único bloque interactivo del producto | reemplaza el estado `sel` del prototipo |
+| `SizeGuideDialog`, `SizeGuideTable` | `features/catalog/components` | dialog cliente, tabla servidor | guía en producto y página dedicada |
+| `CartSheet`, `CartLine`, `ShippingProgress`, `CartLinesActions` | `features/cart/components` | sheet cliente; líneas server; mutaciones por server actions | drawer y `/carrito` |
+| `CheckoutForm`, `OrderConfirmation`, `WhatsAppConfirmation` | `features/checkout/components` | form cliente con RHF + Zod; confirmación server | reemplaza el checkout directo del drawer |
+| `StoreBreadcrumbs`, `StoreEmptyState`, `StorePagination`, `FaqAccordion` | `components/store` | servidor | utilidades de tienda |
+
+Criterio de capa: `components/store` no importa features (misma regla que `components/admin`); los bloques que llaman acciones o leen dominio van en `features/<dominio>/components`. No se crean componentes de un solo uso que solo reorganicen clases.
+
+### Consultas y módulos nuevos
+
+La tienda no reutiliza las queries del admin tal cual: el admin lista borradores y archivados, la tienda solo publica activos con imagen y stock. Nuevas funciones, todas con `import "server-only"`:
+
+- `features/catalog/queries.ts` (variantes de tienda): `listStoreProducts({ filters })`, `getStoreProduct(slug)`, `getStoreRelatedProducts(id, limit)`, `getBestSellers(limit)`, `getNewArrivals(limit)`, `getTopSellingByAge()`, `listActiveCategoriesWithCount()`, `listAvailableSizes(filters)`. Solo productos `status = active`, con al menos una imagen y stock en alguna talla.
+- `features/content/queries.ts` (variantes de tienda): `getHomeSections()`, `getPublishedPage(slug)`, `listPublishedPages()`, `listFaqs()`.
+- `features/settings/queries.ts`: `getStoreSettings()` (whatsapp, envío, envío gratis, métodos de pago activos).
+- `features/cart/`: `cookie.ts` (server-only: leer/firmar/serializar), `actions.ts` (`addToCart`, `updateLineQty`, `removeLine`, `clearCart`), `schema.ts`, `components/`.
+- `features/checkout/`: `schema.ts` (formulario), `components/`. La acción `createOrder` vive en `features/orders/actions.ts` y usa el servicio de pedidos de la Fase 5.
+- `features/catalog/size-guide.ts`: matrices de medidas por grupo de edad y tabla de calzado 28–44 (copia de negocio; la fórmula `shoeGuide` del prototipo no se migra).
+
+No se instalan dependencias nuevas: React Hook Form, Zod, Sonner y las primitivas shadcn necesarias (Sheet, Dialog, Accordion nativo vía `details`) ya están.
+
+### Carrito (diseño cerrado)
+
+- **Persistencia:** cookie `mistikax_cart` firmada con HMAC usando `CART_COOKIE_SECRET`, `httpOnly`, `sameSite = lax`, `secure` en producción, vida de 30 días, formato versionado `v1`. Contenido: `[{ productId, size, colorId, qty }]`; máximo 30 líneas y qty de 1 al stock disponible; el badge muestra la suma de cantidades.
+- **Precios siempre calculados:** la cookie no guarda precios; el subtotal se recalcula en servidor leyendo el producto vigente en cada render. Si un producto se archiva o queda sin stock, la línea se muestra como no disponible con opción de quitarla; si el precio cambió, se muestra el nuevo.
+- **Mutaciones:** server actions (`addToCart`, `updateLineQty`, `removeLine`, `clearCart`) que validan producto, talla y stock, ajustan la cookie con `await cookies()` y devuelven resultado tipado. No se consulta la base desde el cliente y no se guarda carrito en `localStorage`.
+- **Reserva de stock:** ninguna. Agregar al carrito no bloquea stock; el control definitivo ocurre en el checkout. Además del checkout: `updateLineQty` y `addToCart` rechazan cantidades por encima del stock con mensaje en español.
+- **Drawer y página:** el drawer (`CartSheet` sobre shadcn Sheet) comparte contenido con `/carrito`; abrir el drawer no navega. El progreso de envío gratis se calcula contra `free_shipping_threshold_cents`.
+
+### Checkout (diseño cerrado)
+
+- **Campos:** nombre, email, teléfono, ciudad, dirección, nota opcional y método de pago (`transfer` o `cash_on_delivery`, filtrados por los flags de `site_settings`). Validación en cliente con Zod + React Hook Form y de nuevo en la acción.
+- **Acción `createOrder` (transacción única):** revalida cada línea contra la base (producto activo, talla con stock ≥ qty, precio vigente) → recalcula subtotal, envío (0 si subtotal ≥ umbral) y total → inserta `orders` (`status: pending`, número humano), `order_items` con snapshot, primera entrada de `order_status_history` → decrementa stock por talla → limpia la cookie del carrito → devuelve número, totales y la URL de WhatsApp ya construida. Cualquier stock insuficiente devuelve error tipado que nombra la línea conflictiva; nada se persiste a medias.
+- **Mensaje de WhatsApp:** generado en servidor (`features/orders/whatsapp.ts`, helper ya existente del admin) con líneas, talla, color y total; el cliente solo abre `wa.me` con la URL recibida. No se vuelve a calcular nada en el cliente.
+- **Confirmación:** tras el éxito, `/checkout/exito?number=...&token=...` donde `token` es un HMAC de vida corta firmado con `CART_COOKIE_SECRET`; la página verifica token y número antes de mostrar resumen del pedido (evita exponer pedidos adivinando números). Ofrece reabrir el chat de WhatsApp y volver al catálogo.
+- **Compra directa del prototipo:** el botón "Comprar por WhatsApp" del producto se mantiene sin crear pedido (paridad); crea el pedido solo el checkout del carrito.
+- **Cupones:** fuera del checkout de la Fase 7; el CRUD del admin existe y el campo se añadirá como cambio posterior si el negocio lo pide.
+
+### Reglas de renderizado y estado
+
+- Server Components por defecto: header (contenido), footer, home, catálogo, producto (salvo panel de compra), páginas, guía, FAQ.
+- `"use client"` solo en: toggles de header/menú móvil, `ProductPurchasePanel`, controles de línea del carrito, `CheckoutForm` y el dialog de guía de tallas.
+- El badge del carrito y el contenido del drawer vienen del servidor; como toda página que lee la cookie es dinámica, la Fase 7 no aplica caching parcial; la optimización de streaming/cache se mide en la Fase 8.
+- Los filtros del catálogo manipulan la URL con `router.push(..., { scroll: false })`, equivalente al `keepScroll` del prototipo.
+- Todos los estados de página (loading, empty, error, success) existen: skeletons con la forma del grid, estado vacío con CTA al catálogo, página de error de tienda. Diálogos y drawer accesibles por teclado, foco visible y cierre con Escape.
+- Imágenes con `next/image`: aspect 4/5 de tarjeta y producto, `sizes` por breakpoint, LCP priority solo en el hero; placeholder local equivalente a `PH` del prototipo.
+
+### SEO
+
+- `generateMetadata` en producto (título, `seo_description` o descripción, canonical `/producto/[slug]`, OG con la imagen principal) y en páginas CMS; metadata estática en catálogo, guia, FAQ y páginas informativas.
+- JSON-LD: `Product` con `offers` en PEN y `availability` según stock, `BreadcrumbList` en catálogo y producto, `FAQPage` en `/faq`.
+- `sitemap.ts`: `/`, `/catalogo`, `/faq`, `/guia-de-tallas`, slugs de productos activos y páginas publicadas, con `lastModified` real.
+- `robots.ts`: indexa la tienda; `noindex` en `/checkout`, `/checkout/exito`, `/carrito` (el noindex de admin ya vive en su layout).
+
+### Decisiones cerradas
+
+| Tema | Decisión | Razón |
+| --- | --- | --- |
+| Valores de URL | `age` usa `kids/teens/adults` (enum); categorías y slugs de producto en español como contenido | los datos son inglés; SEO público en español |
+| Orden por defecto | `is_best_seller DESC, sold_count DESC`; `sort=new` = `created_at DESC`; `asc`/`desc` por precio | hace determinista la posición de portada y catálogo |
+| Tarjetas de edad del home | imagen del producto mejor vendido activo de cada grupo | sin configuración nueva en el CMS para la v1 |
+| Compra directa sin pedido | se mantiene como mensaje simple, sin stock ni número | paridad con el prototipo; el flujo real es el checkout |
+| Cupones en checkout | fuera de la Fase 7 | el CRUD existe; el campo se añade después si el negocio lo pide |
+| Página de éxito | `/checkout/exito` con token HMAC | evita exponer pedidos por número secuencial |
+| Guía de tallas | constantes TS, no CMS | contenido de negocio estable; la fórmula del prototipo es placeholder |
+| Paginación del catálogo | 24 por página | el prototipo no pagina pero la base tendrá más productos que sus 18 |
+| Render dinámico en v1 | toda página lee la cookie del carrito | simple y correcto; caché se evalúa midiendo en la Fase 8 |
+| Nav del header | lista curada constante (no todas las categorías) | paridad con el prototipo; el footer sí lista todas |
+| Políticas del footer | páginas sembradas en el CMS en vez de `href="#"` | contenido real y obligatorio para lanzamiento |
 
 ### Cambios de comportamiento
 
@@ -603,11 +851,13 @@ Decisiones del modelo:
 | Router hash | Rutas del App Router y `searchParams` |
 | Carrito en el navegador | Cookie firmada + revalidación en servidor |
 | Strings con `innerHTML` | JSX y componentes server/client |
-| Imágenes remotas | Assets locales o rutas de uploads |
-| Fuentes por CDN | `next/font` |
+| Imágenes remotas (Unsplash) | Assets locales del seed y uploads servidos por la ruta de medios |
+| Fuentes por CDN | `next/font` (ya cargadas en la Fase 0) |
 | CSS inline | Tokens y Tailwind |
 | Pedido solo por WhatsApp | Pedido pendiente en base + mensaje de WhatsApp |
 | Sin SEO real | Metadata, JSON-LD, sitemap y canonical |
+| `document.title` manual | metadata por ruta |
+| `data-act` globales y estado `sel` | server actions y estado local del panel de compra |
 
 La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, componentes de imagen, estados vacíos y validaciones. No comparte el layout ni el tema.
 

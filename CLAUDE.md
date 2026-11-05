@@ -23,15 +23,16 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 | `client.html` | Storefront prototype: hash router, product catalog, cart drawer, WhatsApp checkout |
 | `src/app/` | Next.js 16 app: root layout, themes, store placeholder, admin shell with Resumen, catalog, sales, content, media, settings and login |
 | `src/features/dashboard/` | Typed fixtures and queries behind the admin Resumen; order summaries come from the shared orders fixture and are replaced by database queries in phase 4 |
-| `src/features/catalog/` | Product, category and inventory fixtures, queries, schemas and admin components; replaced by database queries in phase 4 |
+| `src/features/catalog/` | Product, category and inventory database queries, Zod actions and admin components; fixtures remain only as seed source |
 | `src/features/orders/` | Detailed order fixtures, filters, totals, WhatsApp helper and order detail presentation; persistence in phase 5 |
 | `src/features/customers/` | Customers derived from order fixtures; persistence in phase 5 |
 | `src/features/coupons/` | Coupon fixtures, table and validated create/edit form; persistence in phase 5 |
 | `src/features/content/` | Home, page and FAQ fixtures, queries and validated editors; persistence in phase 5 |
-| `src/features/media/` | Local media library and deferred uploads; real uploads in phase 4 |
+| `src/features/media/` | Media database queries, upload/delete actions and grid; served through `app/media/[...path]` |
+| `src/db/` | Drizzle client, catalog and media schema, and reproducible seed for catalog fixtures |
 | `src/features/settings/` | Store settings and team fixtures, validated forms and read-only team view; persistence in phases 5 and 6 |
 | `public/svg/` | Brand logos |
-| `storage/uploads/` | Local runtime uploads; empty until phase 4 |
+| `storage/uploads/` | Local runtime uploads, organized as `YYYY/MM/<uuid>.<ext>` at runtime |
 | `plan.md` | Migration roadmap and target architecture |
 
 The prototypes are a visual reference, not an architecture reference. Their helper functions (`page()`, `tbl()`, `modal()`, `fld()`, `toast()`) map to React components; their `innerHTML` strings must become JSX.
@@ -45,7 +46,7 @@ The prototypes are a visual reference, not an architecture reference. Their help
 | Styling | Tailwind CSS v4, CSS-first tokens | Installed |
 | Components | shadcn/ui, Radix primitives, `cva` | Installed |
 | Icons | Iconify, local `lucide` subset | Installed |
-| Database | Supabase Postgres, Drizzle ORM, `postgres.js` | Planned |
+| Database | Supabase Postgres, Drizzle ORM, `postgres.js` | Installed for catalog, media and inventory |
 | Auth | Supabase Auth with `@supabase/ssr`; roles in `profiles` | Planned |
 | Validation | Zod; React Hook Form on client forms | Installed |
 | Admin UI | TanStack Table, Recharts | Recharts installed; TanStack Table planned |
