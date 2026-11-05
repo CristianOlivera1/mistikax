@@ -51,6 +51,8 @@
   --font-mono: var(--font-app-mono);
   --font-heading: var(--font-app-heading);
   --font-display: var(--font-montserrat);
+  --color-cacao: var(--cacao);
+  --color-clay: var(--clay);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -157,6 +159,8 @@
   --sidebar-border: #e8e8e8;
   --sidebar-ring: #a89b90;
   --radius: 0rem;
+  --cacao: #4a3728;
+  --clay: #857262;
   font-family: var(--font-app-sans);
   font-size: 16px;
 }

@@ -103,3 +103,37 @@ export function findNavItem(pathname: string): NavItem | undefined {
     isNavItemActive(pathname, item.href),
   ).sort((a, b) => b.href.length - a.href.length)[0];
 }
+
+export type StoreNavItem = {
+  label: string;
+  href: string;
+};
+
+export const STORE_NAV: StoreNavItem[] = [
+  { label: "Inicio", href: "/" },
+  { label: "Niños", href: "/catalogo?age=kids" },
+  { label: "Jóvenes", href: "/catalogo?age=teens" },
+  { label: "Adultos", href: "/catalogo?age=adults" },
+  { label: "Polos", href: "/catalogo?category=polos" },
+  { label: "Calzado", href: "/catalogo?category=calzado" },
+  { label: "Gorras", href: "/catalogo?category=gorras" },
+  { label: "Ofertas", href: "/catalogo?sale=1" },
+  { label: "Contacto", href: "/paginas/contacto" },
+];
+
+export const STORE_MOBILE_NAV: StoreNavItem[] = [
+  { label: "Inicio", href: "/" },
+  { label: "Niños", href: "/catalogo?age=kids" },
+  { label: "Jóvenes", href: "/catalogo?age=teens" },
+  { label: "Adultos", href: "/catalogo?age=adults" },
+  { label: "Polos", href: "/catalogo?category=polos" },
+  { label: "Camisas", href: "/catalogo?category=camisas" },
+  { label: "Pantalones", href: "/catalogo?category=pantalones" },
+  { label: "Casacas", href: "/catalogo?category=casacas" },
+  { label: "Calzado", href: "/catalogo?category=calzado" },
+  { label: "Gorras", href: "/catalogo?category=gorras" },
+  { label: "Accesorios", href: "/catalogo?category=accesorios" },
+  { label: "Ofertas", href: "/catalogo?sale=1" },
+  { label: "Guía de tallas", href: "/guia-de-tallas" },
+  { label: "Contacto", href: "/paginas/contacto" },
+];
