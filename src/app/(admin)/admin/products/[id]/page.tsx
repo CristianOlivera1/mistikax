@@ -18,8 +18,10 @@ export async function generateMetadata({
   const { id } = await params;
   const product = getProductById(id);
 
+  if (!product) notFound();
+
   return {
-    title: product?.name ?? "Editar producto",
+    title: product.name,
   };
 }
 
