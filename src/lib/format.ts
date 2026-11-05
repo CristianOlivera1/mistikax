@@ -17,12 +17,25 @@ const dayMonthFormatter = new Intl.DateTimeFormat("es-PE", {
   timeZone: "America/Lima",
 });
 
+const dateTimeFormatter = new Intl.DateTimeFormat("es-PE", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "America/Lima",
+});
+
 export function formatMoney(cents: number): string {
   return moneyFormatter.format(cents / 100);
 }
 
 export function formatDate(value: Date | string): string {
   return dateFormatter.format(new Date(value));
+}
+
+export function formatDateTime(value: Date | string): string {
+  return dateTimeFormatter.format(new Date(value));
 }
 
 export function formatDayMonth(value: Date | string): string {

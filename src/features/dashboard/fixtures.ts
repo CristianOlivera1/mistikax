@@ -1,9 +1,6 @@
-import type { OrderStatus } from "@/lib/constants";
+import { ORDERS } from "@/features/orders/fixtures";
+import { getOrderItemCount, getOrderTotalCents } from "@/features/orders/types";
 import type { OrderFixture, ProductFixture } from "./types";
-
-const DAY_MS = 86_400_000;
-const SHIPPING_CENTS = 1500;
-const FREE_SHIPPING_CENTS = 20_000;
 
 export const FIXTURE_LOW_STOCK_THRESHOLD = 5;
 
@@ -226,93 +223,12 @@ export const FIXTURE_PRODUCTS: ProductFixture[] = [
   },
 ];
 
-const CUSTOMER_NAMES = [
-  "Luis Quispe",
-  "Carlos Huamán",
-  "Jorge Salas",
-  "Miguel Torres",
-  "Diego Flores",
-  "Andrés Rojas",
-  "Pedro Vargas",
-  "Raúl Mamani",
-];
-
-function createRng(seed: number) {
-  let state = seed;
-  return () => {
-    state = (state * 16807) % 2147483647;
-    return state / 2147483647;
-  };
-}
-
-function limaDayKey(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Lima",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
-
-function buildOrders(): OrderFixture[] {
-  const rng = createRng(20261104);
-  // Fixture timestamps are anchored at 15:00 UTC so the UTC day matches the Lima day used by the dashboard.
-  const today = Date.parse(`${limaDayKey(new Date())}T15:00:00.000Z`);
-  const saleable = FIXTURE_PRODUCTS.filter(
-    (product) => product.status !== "archived",
-  );
-  const orders: OrderFixture[] = [];
-
-  for (let index = 0; index < 180; index += 1) {
-    const daysAgo = ((179 - index) * 60) / 180;
-    const createdAt = new Date(today - daysAgo * DAY_MS).toISOString();
-    const customerName =
-      CUSTOMER_NAMES[Math.floor(rng() * CUSTOMER_NAMES.length)];
-    const lineCount = 1 + Math.floor(rng() * 3);
-    let subtotalCents = 0;
-    let itemCount = 0;
-
-    for (let line = 0; line < lineCount; line += 1) {
-      const product = saleable[Math.floor(rng() * saleable.length)];
-      const quantity = 1 + Math.floor(rng() * 2);
-      subtotalCents += product.priceCents * quantity;
-      itemCount += quantity;
-    }
-
-    const shippingCents =
-      subtotalCents >= FREE_SHIPPING_CENTS ? 0 : SHIPPING_CENTS;
-    let status: OrderStatus;
-
-    if (daysAgo < 1.5) {
-      status = rng() < 0.55 ? "pending" : "paid";
-    } else if (daysAgo < 4) {
-      status = rng() < 0.5 ? "paid" : "shipped";
-    } else if (daysAgo < 8) {
-      status = rng() < 0.5 ? "shipped" : "delivered";
-    } else {
-      status = "delivered";
-    }
-
-    if (daysAgo > 0.5 && rng() < 0.07) {
-      status = "cancelled";
-    }
-
-    const number = 864 + index;
-
-    orders.push({
-      id: String(number),
-      number,
-      customerName,
-      status,
-      totalCents: subtotalCents + shippingCents,
-      itemCount,
-      createdAt,
-    });
-  }
-
-  return orders;
-}
-
-export const FIXTURE_ORDERS = buildOrders().sort((a, b) =>
-  b.createdAt.localeCompare(a.createdAt),
-);
+export const FIXTURE_ORDERS: OrderFixture[] = ORDERS.map((order) => ({
+  id: order.id,
+  number: order.number,
+  customerName: order.customerName,
+  status: order.status,
+  totalCents: getOrderTotalCents(order),
+  itemCount: getOrderItemCount(order),
+  createdAt: order.createdAt,
+}));
