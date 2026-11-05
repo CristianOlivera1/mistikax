@@ -7,8 +7,11 @@ export const metadata: Metadata = {
   title: "Portada y banners",
 };
 
-export default function HomeContentPage() {
-  return (
-    <HomeContentForm content={getHomeContent()} images={getMediaPaths()} />
-  );
+export default async function HomeContentPage() {
+  const [content, images] = await Promise.all([
+    Promise.resolve(getHomeContent()),
+    getMediaPaths(),
+  ]);
+
+  return <HomeContentForm content={content} images={images} />;
 }

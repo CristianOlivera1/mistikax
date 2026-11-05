@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { deleteMediaAction } from "../actions";
 import type { MediaFile } from "../types";
 
 type MediaGridProps = {
@@ -14,6 +15,7 @@ type MediaGridProps = {
 
 export function MediaGrid({ files }: MediaGridProps) {
   const [pendingDelete, setPendingDelete] = useState<MediaFile | null>(null);
+  const [, startTransition] = useTransition();
 
   async function copyUrl(file: MediaFile) {
     try {
@@ -60,21 +62,39 @@ export function MediaGrid({ files }: MediaGridProps) {
                 />
                 Copiar URL
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label={`Eliminar ${file.filename}`}
-                className="text-destructive hover:text-destructive"
-                onClick={() => setPendingDelete(file)}
-              >
-                <Icon
-                  icon="lucide:trash"
-                  width={14}
-                  height={14}
-                  aria-hidden="true"
-                />
-              </Button>
+              {file.source === "upload" ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Eliminar ${file.filename}`}
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setPendingDelete(file)}
+                >
+                  <Icon
+                    icon="lucide:trash"
+                    width={14}
+                    height={14}
+                    aria-hidden="true"
+                  />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled
+                  title="Las imágenes de ejemplo no se pueden eliminar."
+                  aria-label={`Eliminar ${file.filename}`}
+                >
+                  <Icon
+                    icon="lucide:lock"
+                    width={14}
+                    height={14}
+                    aria-hidden="true"
+                  />
+                </Button>
+              )}
             </div>
             <p className="text-muted-foreground truncate px-2 pb-2 font-mono text-[11px]">
               {file.filename}
@@ -89,14 +109,24 @@ export function MediaGrid({ files }: MediaGridProps) {
           if (!open) setPendingDelete(null);
         }}
         title="Eliminar archivo"
-        description={`¿Eliminar ${pendingDelete?.filename ?? "este archivo"}? Esta acción se habilitará cuando los medios estén conectados.`}
+        description={`¿Eliminar ${pendingDelete?.filename ?? "este archivo"}? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         tone="danger"
         onConfirm={() => {
-          setPendingDelete(null);
-          toast.info(
-            "La eliminación se habilitará cuando los medios estén conectados (Fase 4).",
-          );
+          if (!pendingDelete) return;
+          const file = pendingDelete;
+          startTransition(async () => {
+            const result = await deleteMediaAction(file.path);
+
+            if (result.status === "error") {
+              setPendingDelete(null);
+              toast.error(result.message);
+              return;
+            }
+
+            setPendingDelete(null);
+            toast.success("Archivo eliminado.");
+          });
         }}
       />
     </>

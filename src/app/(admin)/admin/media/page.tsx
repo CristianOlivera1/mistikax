@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   title: "Medios",
 };
 
-export default function MediaPage() {
-  const files = getMediaFiles();
+export default async function MediaPage() {
+  const files = await getMediaFiles();
 
   return (
     <div className="space-y-4">
@@ -23,8 +23,8 @@ export default function MediaPage() {
       <Alert className="bg-muted/40">
         <Icon icon="lucide:info" width={15} height={15} aria-hidden="true" />
         <AlertDescription>
-          Galería de imágenes locales. La subida y la eliminación se habilitan
-          en la Fase 4.
+          Sube imágenes nuevas y reutilízalas en tus productos. Los archivos de
+          ejemplo están bloqueados para evitar borrados accidentales.
         </AlertDescription>
       </Alert>
       <MediaGrid files={files} />
