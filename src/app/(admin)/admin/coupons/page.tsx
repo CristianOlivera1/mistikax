@@ -1,17 +1,35 @@
 import type { Metadata } from "next";
-import { AdminPlaceholder } from "@/components/admin/admin-placeholder";
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
+import { CouponDialog } from "@/features/coupons/components/coupon-dialog";
+import { CouponsTable } from "@/features/coupons/components/coupons-table";
+import { getCoupons } from "@/features/coupons/queries";
 
 export const metadata: Metadata = {
   title: "Descuentos",
 };
 
 export default function CouponsPage() {
+  const coupons = getCoupons();
+
   return (
-    <AdminPlaceholder
-      title="Descuentos"
-      description="Códigos que tus clientes aplican al comprar."
-      phase="Fase 3"
-      icon="lucide:percent"
-    />
+    <div className="space-y-4">
+      <PageHeader
+        title="Descuentos"
+        description="Códigos que tus clientes aplican al comprar."
+        actions={<CouponDialog />}
+      />
+      <div className="border-border bg-card overflow-hidden rounded-lg border">
+        {coupons.length > 0 ? (
+          <CouponsTable coupons={coupons} />
+        ) : (
+          <EmptyState
+            icon="lucide:percent"
+            title="Sin descuentos"
+            description="Crea tu primer código promocional."
+          />
+        )}
+      </div>
+    </div>
   );
 }

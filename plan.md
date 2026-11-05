@@ -1,6 +1,6 @@
 # Plan de migración — Mistikax
 
-> **Estado:** Fase 2 completada. `dashboard.html` y `client.html` siguen siendo la referencia visual; el panel ya tiene shell, Resumen y catálogo con fixtures. La autenticación real (Supabase Auth) y la base de datos siguen pendientes.
+> **Estado:** Fase 3 completada. `dashboard.html` y `client.html` siguen siendo la referencia visual; el panel ya tiene shell, Resumen, catálogo, ventas y contenido con fixtures. La autenticación real (Supabase Auth) y la base de datos siguen pendientes.
 
 Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 con componentes reutilizables, y deja preparada la migración futura de `client.html`. La prioridad es que cada pantalla del admin quede cubierta, que el código sea mantenible y que la tienda pueda reutilizar la misma base técnica.
 
@@ -26,7 +26,7 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | 0 | Fundaciones | Completada: Next en `src/`, shadcn, temas, fuentes, login visual, scripts | No |
 | 1 | Shell y kit del admin | Completada: navegación, layout, primitivas y Resumen con fixtures | No |
 | 2 | Catálogo (UI) | Completada: productos, editor, categorías e inventario con fixtures | No |
-| 3 | Ventas y contenido (UI) | Pedidos, clientes, descuentos, CMS y ajustes con fixtures | No |
+| 3 | Ventas y contenido (UI) | Completada: pedidos, clientes, descuentos, CMS y ajustes con fixtures | No |
 | 4 | Catálogo de punta a punta | Drizzle, seed, CRUD real y subidas locales | Sí |
 | 5 | Ventas y contenido de punta a punta | Pedidos, transacciones, CMS y ajustes persistentes | Sí |
 | 6 | Auth y roles | Login, sesiones, permisos y equipo | Sí |
@@ -48,7 +48,7 @@ Las fases 0 a 3 se pueden ejecutar sin tocar Supabase. La fase 4 es el primer pu
 
 Ambos usan Tailwind por CDN, fuentes de Google por `<link>`, un router basado en `location.hash` y plantillas de string con `innerHTML`. `dashboard.html` persiste todo en `localStorage`; `client.html` mantiene el carrito en el navegador. No hay backend, autenticación ni tests de los prototipos.
 
-La Fase 0 dejó en `src/app` el layout raíz, los dos temas, las fuentes locales, el placeholder de tienda, el placeholder de admin y `/login`. La Fase 1 añadió el shell del panel y el Resumen. La Fase 2 añadió el catálogo (productos, categorías e inventario) con fixtures; las pantallas de ventas y contenido llegan en la Fase 3.
+La Fase 0 dejó en `src/app` el layout raíz, los dos temas, las fuentes locales, el placeholder de tienda, el placeholder de admin y `/login`. La Fase 1 añadió el shell del panel y el Resumen. La Fase 2 añadió el catálogo (productos, categorías e inventario) con fixtures. La Fase 3 añadió pedidos, clientes, descuentos, contenido, medios y ajustes con fixtures; la base de datos se conecta en la Fase 4.
 
 La migración es una reescritura de la capa de presentación, no un copiado de HTML. Los strings con `${...}` no se pueden trasladar a JSX sin convertirlos en componentes y sin eliminar los riesgos de inyección.
 
@@ -288,7 +288,7 @@ Implementación:
 | `prettier`, `prettier-plugin-tailwindcss` | Formato consistente y orden de clases | Instalado |
 | `recharts` | Gráfico de ventas del Resumen | Pendiente |
 | `@tanstack/react-table` | Tablas con orden y paginación cuando haga falta | Pendiente |
-| `drizzle-orm`, `postgres`, `drizzle-kit` | Base de datos y migraciones | Pendiente |
+| `drizzle-orm`, `postgres`, `drizzle-kit` | Base de datos y migraciones | Instalado en Fase 4 |
 | `@supabase/supabase-js`, `@supabase/ssr` | Auth, sesiones con cookies y Admin API | Pendiente (Fase 6) |
 | `date-fns` | Fechas y rangos | Pendiente |
 | `vitest`, `@testing-library/react`, `playwright` | Pruebas | Pendiente |
@@ -470,9 +470,9 @@ Decisiones del modelo:
 
 **Estado:** completada. El catálogo usa 18 productos y 7 categorías de fixture; la lista filtra por texto, categoría, edad y estado con paginación en `searchParams`; el editor valida con Zod y React Hook Form en sus ocho secciones; categorías tiene diálogo de creación/edición; inventario muestra el stock por talla y las alertas. Las 19 imágenes de producto son SVG locales. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
 
-**Siguiente:** Fase 3, ventas y contenido.
+**Siguiente:** Fase 3, ventas y contenido (completada).
 
-### Fase 3 — Ventas y contenido: UI completa
+### Fase 3 — Ventas y contenido: UI completa · Completada
 
 **Objetivo:** cubrir el resto del admin antes de conectar la base de datos.
 
@@ -488,12 +488,16 @@ Decisiones del modelo:
 
 **Salida:** todas las rutas del inventario del admin existen y se ven como el prototipo; los formularios validan; las mutaciones muestran un aviso de "persistencia pendiente" o quedan deshabilitadas, sin fingir que guardan.
 
+**Estado:** completada. Pedidos y clientes comparten un fixture detallado de 180 pedidos; la lista filtra por estado y texto con paginación de 20; el detalle muestra items, totales, cliente, historial y acciones deshabilitadas. Descuentos, portada, páginas, FAQ, medios y configuración tienen sus pantallas y formularios validados. La subida de medios, el guardado y las transiciones quedan marcados para las fases 4 y 5; el equipo para la Fase 6. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
+
+**Siguiente:** Fase 4, catálogo de punta a punta y medios locales.
+
 ### Fase 4 — Catálogo de punta a punta y medios locales
 
 **Objetivo:** conectar el catálogo a Supabase Postgres y habilitar la subida local de imágenes.
 
-- Crear el proyecto de Supabase y las variables `DATABASE_URL` y `DIRECT_URL`.
-- Añadir `UPLOAD_DIR` y `CART_COOKIE_SECRET` al `.env.example`; las variables de Supabase Auth ya están en la plantilla para la Fase 6.
+- Validar el proyecto de Supabase existente y las variables `DATABASE_URL` y `DIRECT_URL` ya configuradas en `.env`.
+- Confirmar `UPLOAD_DIR` y `CART_COOKIE_SECRET` en `.env`; las variables de Supabase Auth ya están en la plantilla para la Fase 6.
 - Implementar `src/db/schema` para catálogo, colores, imágenes y medios; generar la migración inicial.
 - Crear `src/db/seed.ts` con los datos del prototipo, precios en centavos y rutas locales.
 - Sustituir las fixtures por `features/<dominio>/queries.ts` con Drizzle.
@@ -504,6 +508,8 @@ Decisiones del modelo:
 - Reemplazar cualquier imagen remota o base64 por assets locales.
 
 **Salida:** un producto se crea, edita, archiva y duplica y persiste tras recargar; el stock por talla se guarda; las categorías respetan sus constraints; una imagen subida sigue disponible tras reiniciar; `pnpm build` pasa; no se usa Supabase Storage ni la API REST de datos.
+
+**Estado:** en curso. `drizzle-orm`, `postgres` y `drizzle-kit` están instalados. La conexión a Supabase rechaza la contraseña de `DATABASE_URL` y `DIRECT_URL` con `28P01`; no se generaron ni aplicaron migraciones para no tocar una base que aún no se puede inspeccionar.
 
 ### Fase 5 — Ventas, contenido y ajustes de punta a punta
 
@@ -645,11 +651,12 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 
 ## 11. Próximo paso
 
-Las fases 1 y 2 están completadas. Continuar con la Fase 3, sin tocar Supabase:
+Las fases 1, 2 y 3 están completadas. Continuar con la Fase 4: conectar el catálogo y los medios a Supabase Postgres.
 
-1. Migrar pedidos, clientes, descuentos, contenido, medios y ajustes con fixtures tipados.
-2. Reemplazar los placeholders de `/admin/orders`, `/admin/customers`, `/admin/coupons`, `/admin/content/*`, `/admin/media` y `/admin/settings`.
-3. Extraer los patrones compartidos que aparezcan al construir esas pantallas.
-4. Revisar la paridad visual con `dashboard.html` antes de conectar Supabase.
+1. Validar la conexión de `DATABASE_URL`/`DIRECT_URL` y crear el esquema Drizzle de catálogo, colores, imágenes y medios.
+2. Generar la migración inicial y un seed con los datos de fixture, precios en centavos y rutas locales.
+3. Sustituir las fixtures de catálogo por consultas Drizzle y acciones de servidor con Zod.
+4. Implementar subidas locales con validación de MIME, tamaño, nombres aleatorios y protección contra path traversal.
+5. Servir las subidas con `app/media/[...path]/route.ts` y conectar el selector de medios.
 
-Cuando se llegue a la Fase 4, se crea el proyecto de Supabase, se configura `DATABASE_URL`/`DIRECT_URL` y se genera la primera migración. Hasta entonces, el trabajo es UI, componentes y validación.
+Hasta completar esa fase, el guardado y las mutaciones permanecen deshabilitados o muestran el aviso de persistencia pendiente.

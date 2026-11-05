@@ -21,9 +21,15 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 | --- | --- |
 | `dashboard.html` | Admin prototype: hash router, inline Tailwind, seed data in `localStorage`, Spanish UI |
 | `client.html` | Storefront prototype: hash router, product catalog, cart drawer, WhatsApp checkout |
-| `src/app/` | Next.js 16 app: root layout, themes, store placeholder, admin shell with Resumen, catalog, sales/content placeholders, and login |
-| `src/features/dashboard/` | Typed fixtures and queries behind the admin Resumen; replaced by database queries in phase 4 |
+| `src/app/` | Next.js 16 app: root layout, themes, store placeholder, admin shell with Resumen, catalog, sales, content, media, settings and login |
+| `src/features/dashboard/` | Typed fixtures and queries behind the admin Resumen; order summaries come from the shared orders fixture and are replaced by database queries in phase 4 |
 | `src/features/catalog/` | Product, category and inventory fixtures, queries, schemas and admin components; replaced by database queries in phase 4 |
+| `src/features/orders/` | Detailed order fixtures, filters, totals, WhatsApp helper and order detail presentation; persistence in phase 5 |
+| `src/features/customers/` | Customers derived from order fixtures; persistence in phase 5 |
+| `src/features/coupons/` | Coupon fixtures, table and validated create/edit form; persistence in phase 5 |
+| `src/features/content/` | Home, page and FAQ fixtures, queries and validated editors; persistence in phase 5 |
+| `src/features/media/` | Local media library and deferred uploads; real uploads in phase 4 |
+| `src/features/settings/` | Store settings and team fixtures, validated forms and read-only team view; persistence in phases 5 and 6 |
 | `public/svg/` | Brand logos |
 | `storage/uploads/` | Local runtime uploads; empty until phase 4 |
 | `plan.md` | Migration roadmap and target architecture |
