@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
@@ -19,6 +19,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import {
+  createCategoryAction,
+  updateCategoryAction,
+} from "../actions";
 import { SIZE_TYPES } from "../constants";
 import { categorySchema, type CategoryValues } from "../schema";
 import { slugify } from "@/lib/slug";
@@ -30,6 +34,7 @@ type CategoryDialogProps = {
 
 export function CategoryDialog({ category }: CategoryDialogProps) {
   const [open, setOpen] = useState(false);
+  const [isSaving, startTransition] = useTransition();
   const defaultValues: CategoryValues = {
     name: category?.name ?? "",
     sizeType: category?.sizeType ?? "clothing",
@@ -47,12 +52,23 @@ export function CategoryDialog({ category }: CategoryDialogProps) {
     if (!next) form.reset(defaultValues);
   }
 
-  function onSubmit() {
-    setOpen(false);
-    form.reset(defaultValues);
-    toast.info(
-      "La categoría está validada. El guardado se habilitará en la Fase 4.",
-    );
+  function onSubmit(values: CategoryValues) {
+    startTransition(async () => {
+      const result = category
+        ? await updateCategoryAction(category.id, values)
+        : await createCategoryAction(values);
+
+      if (result.status === "error") {
+        toast.error(result.message);
+        return;
+      }
+
+      setOpen(false);
+      form.reset(defaultValues);
+      toast.success(
+        category ? "Categoría actualizada." : "Categoría creada.",
+      );
+    });
   }
 
   return (
@@ -132,7 +148,9 @@ export function CategoryDialog({ category }: CategoryDialogProps) {
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit">Guardar</Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Guardando..." : "Guardar"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

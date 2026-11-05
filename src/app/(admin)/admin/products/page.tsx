@@ -25,8 +25,10 @@ export default async function ProductsPage({
   searchParams,
 }: ProductsPageProps) {
   const filters = parseProductFilters(await searchParams);
-  const page = getProductPage(filters);
-  const categories = getCategoriesWithCounts();
+  const [page, categories] = await Promise.all([
+    getProductPage(filters),
+    getCategoriesWithCounts(),
+  ]);
 
   const params = new URLSearchParams();
   if (filters.query) params.set("q", filters.query);
@@ -66,7 +68,7 @@ export default async function ProductsPage({
       <div className="border-border bg-card overflow-hidden rounded-lg border">
         <ProductFilters filters={filters} categories={categories} />
         {page.items.length > 0 ? (
-          <ProductsTable products={page.items} />
+          <ProductsTable products={page.items} categories={categories} />
         ) : (
           <EmptyState
             icon="lucide:package"

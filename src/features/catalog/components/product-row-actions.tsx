@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -13,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { archiveProductAction, duplicateProductAction } from "../actions";
 import type { CatalogProduct } from "../types";
 
 type ProductRowActionsProps = {
@@ -20,9 +22,9 @@ type ProductRowActionsProps = {
 };
 
 export function ProductRowActions({ product }: ProductRowActionsProps) {
-  const [action, setAction] = useState<"duplicate" | "delete" | null>(null);
-  const pendingMessage =
-    "El catálogo se conectará a la base de datos en la Fase 4.";
+  const router = useRouter();
+  const [action, setAction] = useState<"duplicate" | "archive" | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   return (
     <>
@@ -52,9 +54,9 @@ export function ProductRowActions({ product }: ProductRowActionsProps) {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
-            onSelect={() => setAction("delete")}
+            onSelect={() => setAction("archive")}
           >
-            Eliminar
+            Archivar
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -66,22 +68,40 @@ export function ProductRowActions({ product }: ProductRowActionsProps) {
         description={`Se creará una copia de ${product.name} como borrador.`}
         confirmLabel="Duplicar"
         onConfirm={() => {
-          setAction(null);
-          toast.info(pendingMessage);
+          startTransition(async () => {
+            const result = await duplicateProductAction(product.id);
+
+            if (result.status === "error") {
+              setAction(null);
+              toast.error(result.message);
+              return;
+            }
+
+            setAction(null);
+            toast.success("Producto duplicado.");
+            router.push(`/admin/products/${result.id}`);
+            router.refresh();
+          });
         }}
+        confirmDisabled={isPending}
       />
 
       <ConfirmDialog
-        open={action === "delete"}
-        onOpenChange={(open) => setAction(open ? "delete" : null)}
-        title="Eliminar producto"
-        description={`¿Eliminar ${product.name}? Esta acción se habilitará cuando el catálogo esté conectado.`}
-        confirmLabel="Eliminar"
+        open={action === "archive"}
+        onOpenChange={(open) => setAction(open ? "archive" : null)}
+        title="Archivar producto"
+        description={`¿Archivar ${product.name}? Dejará de mostrarse en la tienda y podrás reactivarlo más adelante.`}
+        confirmLabel="Archivar"
         tone="danger"
         onConfirm={() => {
-          setAction(null);
-          toast.info(pendingMessage);
+          startTransition(async () => {
+            await archiveProductAction(product.id);
+            setAction(null);
+            toast.success("Producto archivado.");
+            router.refresh();
+          });
         }}
+        confirmDisabled={isPending}
       />
     </>
   );

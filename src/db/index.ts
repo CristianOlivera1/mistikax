@@ -11,6 +11,8 @@ if (!serverEnv.DATABASE_URL) {
 export const client = postgres(serverEnv.DATABASE_URL, {
   idle_timeout: 20,
   max_lifetime: 60 * 30,
+  connect_timeout: 10,
+  prepare: false,
 });
 
 export const db = drizzle(client, { schema });

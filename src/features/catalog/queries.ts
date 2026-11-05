@@ -1,15 +1,21 @@
 import "server-only";
 
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { db } from "@/db";
 import {
-  AGE_GROUPS,
-  PRODUCT_STATUSES,
-  type AgeGroup,
-  type ProductStatus,
-} from "@/lib/constants";
-import { LOW_STOCK_THRESHOLD, PRODUCTS_PAGE_SIZE, getSizes } from "./constants";
-import { CATEGORIES, COLORS, IMAGE_LIBRARY, PRODUCTS } from "./fixtures";
+  categories,
+  colors,
+  productColors,
+  productImages,
+  productStock,
+  products,
+} from "@/db/schema";
+import type { AgeGroup, ProductStatus } from "@/lib/constants";
+import { LOW_STOCK_THRESHOLD, PRODUCTS_PAGE_SIZE } from "./constants";
 import type {
   CatalogCategory,
+  CatalogColor,
   CatalogProduct,
   CategoryWithCount,
   InventoryFilters,
@@ -21,17 +27,24 @@ import type {
   StockStatus,
 } from "./types";
 
+type ProductRow = typeof products.$inferSelect;
+type StockRow = typeof productStock.$inferSelect;
+type ColorRelationRow = typeof productColors.$inferSelect;
+type ImageRow = typeof productImages.$inferSelect;
+
 function first(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
 }
 
 function isAgeGroup(value: string): value is AgeGroup {
-  return value in AGE_GROUPS;
+  return value === "kids" || value === "teens" || value === "adults";
 }
 
 function isProductStatus(value: string): value is ProductStatus {
-  return value in PRODUCT_STATUSES;
+  return (
+    value === "active" || value === "draft" || value === "archived"
+  );
 }
 
 function isInventoryStatus(value: string): value is InventoryStatusFilter {
@@ -41,18 +54,15 @@ function isInventoryStatus(value: string): value is InventoryStatusFilter {
 export function parseProductFilters(
   params: Record<string, string | string[] | undefined>,
 ): ProductFilters {
-  const categoryValue = first(params.category);
-  const ageValue = first(params.age);
-  const statusValue = first(params.status);
   const pageValue = Number.parseInt(first(params.page), 10);
 
   return {
     query: first(params.q).trim(),
-    categoryId: CATEGORIES.some((category) => category.id === categoryValue)
-      ? categoryValue
+    categoryId: first(params.category).trim(),
+    ageGroup: isAgeGroup(first(params.age)) ? (first(params.age) as AgeGroup) : "",
+    status: isProductStatus(first(params.status))
+      ? (first(params.status) as ProductStatus)
       : "",
-    ageGroup: isAgeGroup(ageValue) ? ageValue : "",
-    status: isProductStatus(statusValue) ? statusValue : "",
     page: Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 1,
   };
 }
@@ -68,24 +78,70 @@ export function parseInventoryFilters(
   };
 }
 
-export function getProductById(id: string): CatalogProduct | undefined {
-  return PRODUCTS.find((product) => product.id === id);
+function toCatalogProduct(
+  row: ProductRow,
+  stockRows: StockRow[],
+  colorRows: ColorRelationRow[],
+  imageRows: ImageRow[],
+): CatalogProduct {
+  const stock = Object.fromEntries(
+    stockRows
+      .filter((stockRow) => stockRow.productId === row.id)
+      .map((stockRow) => [stockRow.size, stockRow.quantity]),
+  );
+  const colorIds = colorRows
+    .filter((colorRow) => colorRow.productId === row.id)
+    .map((colorRow) => colorRow.colorId);
+  const images = imageRows
+    .filter((imageRow) => imageRow.productId === row.id)
+    .sort((a, b) => a.position - b.position)
+    .map((imageRow) => imageRow.path);
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    seoDescription: row.seoDescription,
+    categoryId: row.categoryId,
+    ageGroup: row.ageGroup,
+    status: row.status,
+    priceCents: row.priceCents,
+    compareAtCents: row.compareAtCents,
+    isNew: row.isNew,
+    isBestSeller: row.isBestSeller,
+    soldCount: row.soldCount,
+    stock,
+    colorIds,
+    images,
+  };
 }
 
-export function getCategoryById(id: string): CatalogCategory | undefined {
-  return CATEGORIES.find((category) => category.id === id);
-}
+async function loadProducts(where?: SQL): Promise<CatalogProduct[]> {
+  const rows = await db
+    .select()
+    .from(products)
+    .where(where)
+    .orderBy(desc(products.createdAt), asc(products.id));
 
-export function getCategories(): CatalogCategory[] {
-  return CATEGORIES;
-}
+  if (rows.length === 0) return [];
 
-export function getColors() {
-  return COLORS;
-}
+  const ids = rows.map((row) => row.id);
+  const stockRows = await db
+    .select()
+    .from(productStock)
+    .where(inArray(productStock.productId, ids));
+  const colorRows = await db
+    .select()
+    .from(productColors)
+    .where(inArray(productColors.productId, ids));
+  const imageRows = await db
+    .select()
+    .from(productImages)
+    .where(inArray(productImages.productId, ids));
 
-export function getCatalogImageLibrary(): string[] {
-  return [...IMAGE_LIBRARY];
+  return rows.map((row) =>
+    toCatalogProduct(row, stockRows, colorRows, imageRows),
+  );
 }
 
 export function getStockTotal(product: CatalogProduct): number {
@@ -96,10 +152,7 @@ export function getStockTotal(product: CatalogProduct): number {
 }
 
 export function getStockStatus(product: CatalogProduct): StockStatus {
-  const category = getCategoryById(product.categoryId);
-  const sizeCount = category
-    ? getSizes(category.sizeType, product.ageGroup).length
-    : Object.keys(product.stock).length;
+  const sizeCount = Object.keys(product.stock).length || 1;
   const total = getStockTotal(product);
 
   if (total === 0) return "out";
@@ -107,29 +160,39 @@ export function getStockStatus(product: CatalogProduct): StockStatus {
   return "ok";
 }
 
-export function getProductPage(filters: ProductFilters): ProductPage {
-  const query = filters.query.toLowerCase();
+function catalogWhere(filters: ProductFilters): SQL | undefined {
+  const conditions = [];
 
-  const filtered = PRODUCTS.filter((product) => {
-    const matchesQuery =
-      !query || `${product.name} ${product.id}`.toLowerCase().includes(query);
-    const matchesCategory =
-      !filters.categoryId || product.categoryId === filters.categoryId;
-    const matchesAge =
-      !filters.ageGroup || product.ageGroup === filters.ageGroup;
-    const matchesStatus = !filters.status || product.status === filters.status;
+  if (filters.query) {
+    const pattern = `%${filters.query}%`;
+    conditions.push(
+      or(ilike(products.name, pattern), ilike(products.id, pattern)),
+    );
+  }
+  if (filters.categoryId) {
+    conditions.push(eq(products.categoryId, filters.categoryId));
+  }
+  if (filters.ageGroup) {
+    conditions.push(eq(products.ageGroup, filters.ageGroup));
+  }
+  if (filters.status) {
+    conditions.push(eq(products.status, filters.status));
+  }
 
-    return matchesQuery && matchesCategory && matchesAge && matchesStatus;
-  });
+  return conditions.length ? and(...conditions) : undefined;
+}
 
+export async function getProductPage(
+  filters: ProductFilters,
+): Promise<ProductPage> {
+  const filtered = await loadProducts(catalogWhere(filters));
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / PRODUCTS_PAGE_SIZE));
   const page = Math.min(filters.page, pageCount);
   const start = (page - 1) * PRODUCTS_PAGE_SIZE;
-  const items = filtered.slice(start, start + PRODUCTS_PAGE_SIZE);
 
   return {
-    items,
+    items: filtered.slice(start, start + PRODUCTS_PAGE_SIZE),
     total,
     page,
     pageCount,
@@ -139,48 +202,84 @@ export function getProductPage(filters: ProductFilters): ProductPage {
   };
 }
 
-export function getCategoriesWithCounts(): CategoryWithCount[] {
-  return CATEGORIES.map((category) => {
-    const products = PRODUCTS.filter(
-      (product) => product.categoryId === category.id,
-    );
-
-    return {
-      ...category,
-      productCount: products.length,
-      stockTotal: products.reduce(
-        (total, product) => total + getStockTotal(product),
-        0,
-      ),
-    };
-  });
+export async function getProductById(
+  id: string,
+): Promise<CatalogProduct | undefined> {
+  const [product] = await loadProducts(eq(products.id, id));
+  return product;
 }
 
-export function getInventoryRows(filters: InventoryFilters): InventoryRow[] {
-  const query = filters.query.toLowerCase();
+export async function getCategories(): Promise<CatalogCategory[]> {
+  return db
+    .select({ id: categories.id, name: categories.name, sizeType: categories.sizeType })
+    .from(categories)
+    .orderBy(asc(categories.name));
+}
 
-  return PRODUCTS.filter((product) => product.status !== "archived")
+export async function getCategoryById(
+  id: string,
+): Promise<CatalogCategory | undefined> {
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(eq(categories.id, id))
+    .limit(1);
+  return category;
+}
+
+export async function getColors(): Promise<CatalogColor[]> {
+  return db
+    .select({ id: colors.id, name: colors.name, hex: colors.hex })
+    .from(colors)
+    .orderBy(asc(colors.name));
+}
+
+export async function getCategoriesWithCounts(): Promise<CategoryWithCount[]> {
+  return db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      sizeType: categories.sizeType,
+      productCount: sql<number>`count(distinct ${products.id})::int`,
+      stockTotal: sql<number>`coalesce(sum(${productStock.quantity}), 0)::int`,
+    })
+    .from(categories)
+    .leftJoin(products, eq(products.categoryId, categories.id))
+    .leftJoin(productStock, eq(productStock.productId, products.id))
+    .groupBy(categories.id)
+    .orderBy(asc(categories.name));
+}
+
+export async function getInventoryRows(
+  filters: InventoryFilters,
+): Promise<InventoryRow[]> {
+  const query = filters.query.toLowerCase();
+  const [allProducts, categoryList] = await Promise.all([
+    loadProducts(ne(products.status, "archived")),
+    getCategories(),
+  ]);
+  const categoryById = new Map(categoryList.map((category) => [category.id, category]));
+
+  return allProducts
     .map((product) => {
-      const category = getCategoryById(product.categoryId);
-      const sizes = category
-        ? getSizes(category.sizeType, product.ageGroup).map((size) => ({
-            size,
-            quantity: product.stock[size] ?? 0,
-          }))
-        : [];
+      const category = categoryById.get(product.categoryId);
+
+      if (!category) return null;
+
+      const sizes = Object.entries(product.stock).map(([size, quantity]) => ({
+        size,
+        quantity,
+      }));
 
       return {
         product,
-        category: category ?? {
-          id: product.categoryId,
-          name: product.categoryId,
-          sizeType: "one_size",
-        },
+        category,
         sizes,
         total: getStockTotal(product),
         status: getStockStatus(product),
       };
     })
+    .filter((row): row is InventoryRow => row !== null)
     .filter((row) => {
       const matchesQuery =
         !query ||
@@ -194,10 +293,8 @@ export function getInventoryRows(filters: InventoryFilters): InventoryRow[] {
     });
 }
 
-export function getInventorySummary(): InventorySummary {
-  const activeProducts = PRODUCTS.filter(
-    (product) => product.status !== "archived",
-  );
+export async function getInventorySummary(): Promise<InventorySummary> {
+  const activeProducts = await loadProducts(ne(products.status, "archived"));
 
   return {
     products: activeProducts.length,

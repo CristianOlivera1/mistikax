@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { uploadMediaAction } from "@/features/media/actions";
 
 type ProductImagesFieldProps = {
   name: string;
@@ -30,6 +32,8 @@ export function ProductImagesField({
   onChange,
 }: ProductImagesFieldProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const available = library.filter((src) => !images.includes(src));
 
   function makePrimary(src: string) {
@@ -38,6 +42,28 @@ export function ProductImagesField({
 
   function remove(src: string) {
     onChange(images.filter((item) => item !== src));
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const input = event.target;
+
+    if (!file) return;
+
+    startTransition(async () => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await uploadMediaAction(formData);
+
+      if (result.status === "error") {
+        toast.error(result.message);
+        input.value = "";
+        return;
+      }
+
+      onChange([...images, result.path]);
+      input.value = "";
+    });
   }
 
   return (
@@ -60,12 +86,37 @@ export function ProductImagesField({
           </DialogTrigger>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Imágenes de ejemplo</DialogTitle>
+              <DialogTitle>Galería de medios</DialogTitle>
               <DialogDescription>
-                Selecciona una imagen local para este producto. La subida real
-                llega en la Fase 4.
+                Elige una imagen local o sube un archivo nuevo para este
+                producto.
               </DialogDescription>
             </DialogHeader>
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                hidden
+                onChange={handleFileChange}
+                aria-label="Subir imagen"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={isPending}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Icon
+                  icon="lucide:upload"
+                  width={14}
+                  height={14}
+                  aria-hidden="true"
+                />
+                {isPending ? "Subiendo..." : "Subir imagen"}
+              </Button>
+            </div>
             {available.length > 0 ? (
               <div className="grid max-h-80 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-5">
                 {available.map((src) => (

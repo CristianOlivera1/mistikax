@@ -1,4 +1,4 @@
-import type { AgeGroup } from "@/lib/constants";
+import type { AgeGroup } from "../../lib/constants";
 
 export const SIZE_TYPES = {
   clothing: {

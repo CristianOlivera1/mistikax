@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import { ProductForm } from "@/features/catalog/components/product-form";
 import {
-  getCatalogImageLibrary,
   getCategories,
   getColors,
 } from "@/features/catalog/queries";
+import { getMediaPaths } from "@/features/media/queries";
 
 export const metadata: Metadata = {
   title: "Nuevo producto",
 };
 
-export default function NewProductPage() {
+export default async function NewProductPage() {
+  const [categories, colors, imageLibrary] = await Promise.all([
+    getCategories(),
+    getColors(),
+    getMediaPaths(),
+  ]);
+
   return (
     <ProductForm
-      categories={getCategories()}
-      colors={getColors()}
-      imageLibrary={getCatalogImageLibrary()}
+      categories={categories}
+      colors={colors}
+      imageLibrary={imageLibrary}
     />
   );
 }

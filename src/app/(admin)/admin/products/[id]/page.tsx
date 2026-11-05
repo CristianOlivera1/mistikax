@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProductForm } from "@/features/catalog/components/product-form";
 import {
-  getCatalogImageLibrary,
   getCategories,
   getColors,
   getProductById,
 } from "@/features/catalog/queries";
+import { getMediaPaths } from "@/features/media/queries";
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -16,7 +16,7 @@ export async function generateMetadata({
   params,
 }: ProductDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const product = getProductById(id);
+  const product = await getProductById(id);
 
   if (!product) notFound();
 
@@ -29,16 +29,21 @@ export default async function ProductDetailPage({
   params,
 }: ProductDetailPageProps) {
   const { id } = await params;
-  const product = getProductById(id);
+  const [product, categories, colors, imageLibrary] = await Promise.all([
+    getProductById(id),
+    getCategories(),
+    getColors(),
+    getMediaPaths(),
+  ]);
 
   if (!product) notFound();
 
   return (
     <ProductForm
       product={product}
-      categories={getCategories()}
-      colors={getColors()}
-      imageLibrary={getCatalogImageLibrary()}
+      categories={categories}
+      colors={colors}
+      imageLibrary={imageLibrary}
     />
   );
 }

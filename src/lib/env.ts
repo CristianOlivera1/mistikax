@@ -7,7 +7,12 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),
-  CART_COOKIE_SECRET: z.string().min(32).optional(),
+  CART_COOKIE_SECRET: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value && value.length >= 32 ? value : undefined,
+    ),
   UPLOAD_DIR: z.string().min(1).default("./storage/uploads"),
 });
 

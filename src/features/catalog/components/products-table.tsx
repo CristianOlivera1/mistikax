@@ -3,16 +3,18 @@ import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
 import { ProductThumb } from "@/components/shared/product-thumb";
 import { AGE_GROUPS } from "@/lib/constants";
 import { formatMoney } from "@/lib/format";
-import { getCategoryById, getStockStatus, getStockTotal } from "../queries";
-import type { CatalogProduct } from "../types";
+import { getStockStatus, getStockTotal } from "../queries";
+import type { CatalogCategory, CatalogProduct } from "../types";
 import { ProductRowActions } from "./product-row-actions";
 import { ProductStatusBadge, StockStatusBadge } from "./status-badges";
 
 type ProductsTableProps = {
   products: CatalogProduct[];
+  categories: CatalogCategory[];
 };
 
-export function ProductsTable({ products }: ProductsTableProps) {
+export function ProductsTable({ products, categories }: ProductsTableProps) {
+  const categoryName = new Map(categories.map((category) => [category.id, category.name]));
   const columns: DataTableColumn<CatalogProduct>[] = [
     {
       id: "product",
@@ -58,7 +60,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
     {
       id: "category",
       header: "Categoría",
-      cell: (product) => getCategoryById(product.categoryId)?.name ?? "—",
+      cell: (product) => categoryName.get(product.categoryId) ?? "—",
     },
     {
       id: "age",

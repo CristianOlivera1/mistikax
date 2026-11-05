@@ -25,8 +25,10 @@ export default async function InventoryPage({
   searchParams,
 }: InventoryPageProps) {
   const filters = parseInventoryFilters(await searchParams);
-  const rows = getInventoryRows(filters);
-  const summary = getInventorySummary();
+  const [rows, summary] = await Promise.all([
+    getInventoryRows(filters),
+    getInventorySummary(),
+  ]);
 
   return (
     <div className="space-y-4">
@@ -61,8 +63,8 @@ export default async function InventoryPage({
       <Alert className="bg-muted/40">
         <Icon icon="lucide:info" width={15} height={15} aria-hidden="true" />
         <AlertDescription>
-          La edición de stock por talla se habilitará en la Fase 4. Por ahora
-          esta vista es de solo lectura.
+          La vista es informativa: los ajustes de stock se guardan desde el
+          editor de producto.
         </AlertDescription>
       </Alert>
 

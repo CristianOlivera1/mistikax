@@ -1,4 +1,4 @@
-import type { AgeGroup, ProductStatus } from "@/lib/constants";
+import type { AgeGroup, ProductStatus } from "../../lib/constants";
 import { PLACEHOLDER_IMAGE, getSizes } from "./constants";
 import type { CatalogCategory, CatalogColor, CatalogProduct } from "./types";
 

@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
@@ -21,6 +22,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { AGE_GROUPS, PRODUCT_STATUSES, STORE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGE, getSizes } from "../constants";
+import {
+  archiveProductAction,
+  createProductAction,
+  updateProductAction,
+} from "../actions";
 import { productFormSchema, type ProductFormValues } from "../schema";
 import { slugify } from "@/lib/slug";
 import type { CatalogCategory, CatalogColor, CatalogProduct } from "../types";
@@ -74,8 +80,10 @@ export function ProductForm({
   imageLibrary,
 }: ProductFormProps) {
   const isNew = !product;
+  const router = useRouter();
   const [slugEdited, setSlugEdited] = useState(!isNew);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [isSaving, startTransition] = useTransition();
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: buildDefaultValues(product, categories),
@@ -133,10 +141,23 @@ export function ProductForm({
   );
   const previewId = slug || slugify(name) || "producto";
 
-  function onSubmit() {
-    toast.info(
-      "Los datos están validados. El guardado se habilitará en la Fase 4.",
-    );
+  function onSubmit(values: ProductFormValues) {
+    startTransition(async () => {
+      const result = isNew
+        ? await createProductAction(values)
+        : await updateProductAction(product.id, values);
+
+      if (result.status === "error") {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(isNew ? "Producto creado." : "Producto actualizado.");
+      router.push(
+        isNew ? `/admin/products/${result.id}` : "/admin/products",
+      );
+      router.refresh();
+    });
   }
 
   return (
@@ -153,16 +174,16 @@ export function ProductForm({
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => setDeleteOpen(true)}
+                onClick={() => setArchiveOpen(true)}
               >
-                Eliminar
+                Archivar
               </Button>
             ) : null}
             <Button variant="outline" asChild>
               <Link href="/admin/products">Cancelar</Link>
             </Button>
-            <Button type="submit" form="product-form">
-              Guardar
+            <Button type="submit" form="product-form" disabled={isSaving}>
+              {isSaving ? "Guardando..." : "Guardar"}
             </Button>
           </>
         }
@@ -171,8 +192,7 @@ export function ProductForm({
       <Alert className="bg-muted/40 mt-4">
         <Icon icon="lucide:info" width={15} height={15} aria-hidden="true" />
         <AlertDescription>
-          Vista previa del catálogo. El guardado y la eliminación se habilitan
-          en la Fase 4.
+          Los cambios se guardan en la base de datos cuando pulses Guardar.
         </AlertDescription>
       </Alert>
 
@@ -320,12 +340,18 @@ export function ProductForm({
               label="Identificador (slug)"
               htmlFor="product-slug"
               error={errors.slug?.message}
-              hint={`URL: /productos/${previewId}`}
+              hint={`URL: /productos/${product?.id ?? previewId}`}
             >
               <Input
                 id="product-slug"
                 placeholder="polo-pique-clasico"
                 aria-invalid={Boolean(errors.slug)}
+                disabled={!isNew}
+                title={
+                  isNew
+                    ? undefined
+                    : "El identificador es inmutable para no romper las URLs."
+                }
                 {...form.register("slug")}
                 onInput={() => setSlugEdited(true)}
               />
@@ -470,17 +496,20 @@ export function ProductForm({
 
       {!isNew ? (
         <ConfirmDialog
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
-          title="Eliminar producto"
-          description={`¿Eliminar ${product.name}? Esta acción se habilitará cuando el catálogo esté conectado.`}
-          confirmLabel="Eliminar"
+          open={archiveOpen}
+          onOpenChange={setArchiveOpen}
+          title="Archivar producto"
+          description={`¿Archivar ${product.name}? Dejará de estar visible y podrás reactivarlo más adelante.`}
+          confirmLabel="Archivar"
           tone="danger"
           onConfirm={() => {
-            setDeleteOpen(false);
-            toast.info(
-              "La eliminación se habilitará cuando el catálogo esté conectado (Fase 4).",
-            );
+            setArchiveOpen(false);
+            startTransition(async () => {
+              await archiveProductAction(product.id);
+              toast.success("Producto archivado.");
+              router.push("/admin/products");
+              router.refresh();
+            });
           }}
         />
       ) : null}

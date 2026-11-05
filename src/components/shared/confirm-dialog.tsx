@@ -18,6 +18,7 @@ type ConfirmDialogProps = {
   title: string;
   description: ReactNode;
   confirmLabel?: string;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   tone?: "default" | "danger";
 };
@@ -28,6 +29,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Confirmar",
+  confirmDisabled = false,
   onConfirm,
   tone = "default",
 }: ConfirmDialogProps) {
@@ -42,6 +44,7 @@ export function ConfirmDialog({
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             variant={tone === "danger" ? "destructive" : "default"}
+            disabled={confirmDisabled}
             onClick={onConfirm}
           >
             {confirmLabel}

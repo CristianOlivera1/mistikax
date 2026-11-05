@@ -1,4 +1,4 @@
-import type { AgeGroup, ProductStatus } from "@/lib/constants";
+import type { AgeGroup, ProductStatus } from "../../lib/constants";
 import type { SizeType } from "./constants";
 
 export type CatalogCategory = {

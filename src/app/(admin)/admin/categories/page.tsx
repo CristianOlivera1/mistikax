@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   title: "Categorías",
 };
 
-export default function CategoriesPage() {
-  const categories = getCategoriesWithCounts();
+export default async function CategoriesPage() {
+  const categories = await getCategoriesWithCounts();
 
   return (
     <div className="space-y-4">
