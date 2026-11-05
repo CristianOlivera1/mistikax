@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { SIZE_TYPES } from "../constants";
 import { categorySchema, type CategoryValues } from "../schema";
-import { slugify } from "../slug";
+import { slugify } from "@/lib/slug";
 import type { CatalogCategory } from "../types";
 
 type CategoryDialogProps = {

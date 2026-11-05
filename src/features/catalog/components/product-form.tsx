@@ -22,7 +22,7 @@ import { AGE_GROUPS, PRODUCT_STATUSES, STORE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { PLACEHOLDER_IMAGE, getSizes } from "../constants";
 import { productFormSchema, type ProductFormValues } from "../schema";
-import { slugify } from "../slug";
+import { slugify } from "@/lib/slug";
 import type { CatalogCategory, CatalogColor, CatalogProduct } from "../types";
 import { ProductImagesField } from "./product-images-field";
 
