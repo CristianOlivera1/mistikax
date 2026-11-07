@@ -22,8 +22,8 @@ const TABS: Array<{ value: OrderStatusFilter; label: string }> = [
   })),
 ];
 
-export function OrderFilters({ filters }: OrderFiltersProps) {
-  const counts = getOrderStatusCounts();
+export async function OrderFilters({ filters }: OrderFiltersProps) {
+  const counts = await getOrderStatusCounts();
 
   function statusHref(status: OrderStatusFilter) {
     const params = new URLSearchParams();

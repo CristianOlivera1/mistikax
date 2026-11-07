@@ -5,11 +5,12 @@ import { Icon } from "@/components/icons/icon";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProductThumb } from "@/components/shared/product-thumb";
 import { SectionCard } from "@/components/shared/section-card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { ORDER_STATUSES, type OrderStatus } from "@/lib/constants";
+import { ORDER_STATUSES } from "@/lib/constants";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge";
+import { OrderNoteForm } from "@/features/orders/components/order-note-form";
+import { OrderStatusActions } from "@/features/orders/components/order-status-actions";
 import { getOrderById, getOrderWhatsAppHref } from "@/features/orders/queries";
 import {
   PAYMENT_METHOD_LABELS,
@@ -22,17 +23,11 @@ type OrderDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
-  pending: "paid",
-  paid: "shipped",
-  shipped: "delivered",
-};
-
 export async function generateMetadata({
   params,
 }: OrderDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
 
   if (!order) notFound();
 
@@ -45,12 +40,10 @@ export default async function OrderDetailPage({
   params,
 }: OrderDetailPageProps) {
   const { id } = await params;
-  const order = getOrderById(id);
+  const order = await getOrderById(id);
 
   if (!order) notFound();
 
-  const nextStatus = NEXT_STATUS[order.status];
-  const canCancel = order.status === "pending" || order.status === "paid";
   const subtotal = getOrderSubtotalCents(order);
 
   return (
@@ -77,36 +70,10 @@ export default async function OrderDetailPage({
                 WhatsApp
               </a>
             </Button>
-            {canCancel ? (
-              <Button
-                type="button"
-                variant="destructive"
-                disabled
-                title="El cambio de estado se habilitará en la Fase 5."
-              >
-                Cancelar
-              </Button>
-            ) : null}
-            {nextStatus ? (
-              <Button
-                type="button"
-                disabled
-                title="El cambio de estado se habilitará en la Fase 5."
-              >
-                Marcar como {ORDER_STATUSES[nextStatus].toLowerCase()}
-              </Button>
-            ) : null}
+            <OrderStatusActions orderId={order.id} status={order.status} />
           </>
         }
       />
-
-      <Alert className="bg-muted/40">
-        <Icon icon="lucide:info" width={15} height={15} aria-hidden="true" />
-        <AlertDescription>
-          Vista previa del pedido. Los cambios de estado y las notas internas se
-          habilitan en la Fase 5.
-        </AlertDescription>
-      </Alert>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -166,13 +133,7 @@ export default async function OrderDetailPage({
           </SectionCard>
 
           <SectionCard title="Notas internas" bodyClassName="p-5">
-            {order.note ? (
-              <p className="text-sm whitespace-pre-wrap">{order.note}</p>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Sin notas internas. Podrás agregarlas en la Fase 5.
-              </p>
-            )}
+            <OrderNoteForm orderId={order.id} note={order.note} />
           </SectionCard>
         </div>
 
@@ -207,3 +168,5 @@ export default async function OrderDetailPage({
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

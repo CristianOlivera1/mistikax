@@ -20,7 +20,7 @@ export default async function CustomersPage({
   searchParams,
 }: CustomersPageProps) {
   const filters = parseCustomerFilters(await searchParams);
-  const customers = getCustomers(filters);
+  const customers = await getCustomers(filters);
 
   return (
     <div className="space-y-4">
@@ -43,3 +43,5 @@ export default async function CustomersPage({
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

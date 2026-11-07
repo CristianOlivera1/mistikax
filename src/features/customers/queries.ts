@@ -1,7 +1,8 @@
 import "server-only";
 
-import { ORDERS } from "@/features/orders/fixtures";
-import { getOrderTotalCents, type AdminOrder } from "@/features/orders/types";
+import { desc } from "drizzle-orm";
+import { db } from "@/db";
+import { orders } from "@/db/schema";
 import type { AdminCustomer, CustomerFilters } from "./types";
 
 function first(value: string | string[] | undefined): string {
@@ -15,45 +16,37 @@ export function parseCustomerFilters(
   return { query: first(params.q).trim() };
 }
 
-function upsertCustomer(
-  customers: Map<string, AdminCustomer>,
-  order: AdminOrder,
-) {
-  const current = customers.get(order.customerEmail);
-
-  if (!current) {
-    customers.set(order.customerEmail, {
-      id: order.customerEmail,
-      name: order.customerName,
-      email: order.customerEmail,
-      phone: order.customerPhone,
-      city: order.customerCity,
-      orderCount: 1,
-      spentCents: order.status === "cancelled" ? 0 : getOrderTotalCents(order),
-      lastPurchaseAt: order.createdAt,
-    });
-    return;
-  }
-
-  current.orderCount += 1;
-
-  if (order.status !== "cancelled") {
-    current.spentCents += getOrderTotalCents(order);
-  }
-
-  if (order.createdAt > current.lastPurchaseAt) {
-    current.lastPurchaseAt = order.createdAt;
-    current.name = order.customerName;
-    current.phone = order.customerPhone;
-    current.city = order.customerCity;
-  }
-}
-
-export function getCustomers(filters: CustomerFilters = { query: "" }) {
+export async function getCustomers(
+  filters: CustomerFilters = { query: "" },
+): Promise<AdminCustomer[]> {
+  const allOrders = await db
+    .select()
+    .from(orders)
+    .orderBy(desc(orders.createdAt), desc(orders.number));
   const customers = new Map<string, AdminCustomer>();
 
-  for (const order of ORDERS) {
-    upsertCustomer(customers, order);
+  for (const order of allOrders) {
+    const current = customers.get(order.email);
+
+    if (!current) {
+      customers.set(order.email, {
+        id: order.email,
+        name: order.customerName,
+        email: order.email,
+        phone: order.phone,
+        city: order.city,
+        orderCount: 1,
+        spentCents: order.status === "cancelled" ? 0 : order.totalCents,
+        lastPurchaseAt: order.createdAt.toISOString(),
+      });
+      continue;
+    }
+
+    current.orderCount += 1;
+
+    if (order.status !== "cancelled") {
+      current.spentCents += order.totalCents;
+    }
   }
 
   const query = filters.query.toLowerCase();

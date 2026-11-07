@@ -16,7 +16,7 @@ type OrdersPageProps = {
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const filters = parseOrderFilters(await searchParams);
-  const ordersPage = getOrderPage(filters);
+  const ordersPage = await getOrderPage(filters);
   const params = new URLSearchParams();
 
   if (filters.status !== "all") params.set("status", filters.status);
@@ -59,3 +59,5 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";
