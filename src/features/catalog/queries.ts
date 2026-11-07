@@ -254,10 +254,8 @@ export async function getInventoryRows(
   filters: InventoryFilters,
 ): Promise<InventoryRow[]> {
   const query = filters.query.toLowerCase();
-  const [allProducts, categoryList] = await Promise.all([
-    loadProducts(ne(products.status, "archived")),
-    getCategories(),
-  ]);
+  const allProducts = await loadProducts(ne(products.status, "archived"));
+  const categoryList = await getCategories();
   const categoryById = new Map(categoryList.map((category) => [category.id, category]));
 
   return allProducts

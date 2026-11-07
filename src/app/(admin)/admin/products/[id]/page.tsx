@@ -47,3 +47,5 @@ export default async function ProductDetailPage({
     />
   );
 }
+
+export const dynamic = "force-dynamic";
