@@ -18,7 +18,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import type { AdminBadgeCounts, AdminSearchItem } from "@/lib/nav";
+import type {
+  AdminBadgeCounts,
+  AdminRole,
+  AdminSearchItem,
+} from "@/lib/nav";
 import { AdminSidebarContent } from "./admin-sidebar";
 import { Breadcrumbs } from "./breadcrumbs";
 import { CommandPalette } from "./command-palette";
@@ -26,9 +30,10 @@ import { CommandPalette } from "./command-palette";
 type AdminTopbarProps = {
   counts: AdminBadgeCounts;
   searchItems: AdminSearchItem[];
+  user: { name: string; email: string; role: AdminRole };
 };
 
-export function AdminTopbar({ counts, searchItems }: AdminTopbarProps) {
+export function AdminTopbar({ counts, searchItems, user }: AdminTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
 
@@ -72,6 +77,8 @@ export function AdminTopbar({ counts, searchItems }: AdminTopbarProps) {
           <SheetTitle className="sr-only">Menú del panel</SheetTitle>
           <AdminSidebarContent
             counts={counts}
+            role={user.role}
+            user={user}
             onNavigate={() => setMenuOpen(false)}
           />
         </SheetContent>

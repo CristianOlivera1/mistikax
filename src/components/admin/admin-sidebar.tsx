@@ -4,20 +4,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/icons/icon";
 import { BrandMark } from "@/components/shared/brand-mark";
-import { ADMIN_NAV, isNavItemActive, type AdminBadgeCounts } from "@/lib/nav";
+import {
+  filterAdminNavForRole,
+  isNavItemActive,
+  type AdminBadgeCounts,
+  type AdminRole,
+} from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { AdminUserMenu } from "./admin-user-menu";
 
 type AdminSidebarContentProps = {
   counts: AdminBadgeCounts;
+  role: AdminRole;
+  user: { name: string; email: string; role: AdminRole };
   onNavigate?: () => void;
 };
 
 export function AdminSidebarContent({
   counts,
+  role,
+  user,
   onNavigate,
 }: AdminSidebarContentProps) {
   const pathname = usePathname();
+  const nav = filterAdminNavForRole(role);
 
   return (
     <div className="flex h-full flex-col">
@@ -29,7 +39,7 @@ export function AdminSidebarContent({
         className="flex-1 space-y-5 overflow-y-auto p-3"
         aria-label="Navegación principal"
       >
-        {ADMIN_NAV.map((group) => (
+        {nav.map((group) => (
           <div key={group.label ?? "panel"}>
             {group.label ? (
               <p className="text-muted-foreground mb-1 px-2 text-xs font-medium">
@@ -87,7 +97,12 @@ export function AdminSidebarContent({
           />
           Ver tienda
         </Link>
-        <AdminUserMenu onNavigate={onNavigate} />
+        <AdminUserMenu
+          name={user.name}
+          email={user.email}
+          role={user.role}
+          onNavigate={onNavigate}
+        />
       </div>
     </div>
   );

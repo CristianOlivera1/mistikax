@@ -10,13 +10,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ADMIN_USER, ROLES } from "@/lib/constants";
+import type { AdminRole } from "@/lib/nav";
+import { signOutAction } from "@/features/auth/actions";
 
 type AdminUserMenuProps = {
+  name: string;
+  email: string;
+  role: AdminRole;
   onNavigate?: () => void;
 };
 
-export function AdminUserMenu({ onNavigate }: AdminUserMenuProps) {
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+export function AdminUserMenu({
+  name,
+  email,
+  role,
+  onNavigate,
+}: AdminUserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -25,9 +43,9 @@ export function AdminUserMenu({ onNavigate }: AdminUserMenuProps) {
           className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-sm transition-colors"
         >
           <span className="bg-muted text-foreground grid size-5 place-items-center rounded-full text-[10px] font-semibold">
-            AD
+            {initials(name)}
           </span>
-          <span className="text-foreground truncate">{ADMIN_USER.name}</span>
+          <span className="text-foreground truncate">{name}</span>
           <Icon
             icon="lucide:chevron-down"
             width={14}
@@ -40,10 +58,10 @@ export function AdminUserMenu({ onNavigate }: AdminUserMenuProps) {
       <DropdownMenuContent side="top" align="start" className="w-56">
         <DropdownMenuLabel>
           <span className="text-foreground block text-sm font-medium">
-            {ADMIN_USER.name}
+            {name}
           </span>
           <span className="text-muted-foreground block text-xs font-normal">
-            {ADMIN_USER.email} · {ROLES[ADMIN_USER.role]}
+            {email} · {role === "admin" ? "Administrador" : "Editor"}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -70,17 +88,19 @@ export function AdminUserMenu({ onNavigate }: AdminUserMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild variant="destructive">
-          <Link href="/login" onClick={onNavigate}>
-            <Icon
-              icon="lucide:log-out"
-              width={16}
-              height={16}
-              aria-hidden="true"
-            />
-            Cerrar sesión
-          </Link>
-        </DropdownMenuItem>
+        <form action={signOutAction}>
+          <DropdownMenuItem asChild variant="destructive">
+            <button type="submit" onClick={onNavigate} className="w-full">
+              <Icon
+                icon="lucide:log-out"
+                width={16}
+                height={16}
+                aria-hidden="true"
+              />
+              Cerrar sesión
+            </button>
+          </DropdownMenuItem>
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );

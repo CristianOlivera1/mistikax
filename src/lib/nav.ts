@@ -93,6 +93,45 @@ export const ADMIN_NAV: NavGroup[] = [
 
 export const ADMIN_NAV_ITEMS = ADMIN_NAV.flatMap((group) => group.items);
 
+export type AdminRole = "admin" | "editor";
+
+const EDITOR_HREFS = new Set([
+  "/admin",
+  "/admin/products",
+  "/admin/categories",
+  "/admin/inventory",
+  "/admin/content/home",
+  "/admin/content/pages",
+  "/admin/content/faqs",
+  "/admin/media",
+]);
+
+const EDITOR_PREFIXES = [
+  "/admin/products",
+  "/admin/categories",
+  "/admin/inventory",
+  "/admin/content",
+  "/admin/media",
+];
+
+export function filterAdminNavForRole(role: AdminRole): NavGroup[] {
+  if (role === "admin") return ADMIN_NAV;
+
+  return ADMIN_NAV.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => EDITOR_HREFS.has(item.href)),
+  })).filter((group) => group.items.length > 0);
+}
+
+export function canAccessAdminPath(role: AdminRole, pathname: string): boolean {
+  if (role === "admin") return true;
+  if (pathname === "/admin") return true;
+
+  return EDITOR_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export function isNavItemActive(pathname: string, href: string): boolean {
   if (href === "/admin") return pathname === "/admin";
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -111,29 +150,29 @@ export type StoreNavItem = {
 
 export const STORE_NAV: StoreNavItem[] = [
   { label: "Inicio", href: "/" },
-  { label: "Niños", href: "/catalogo?age=kids" },
-  { label: "Jóvenes", href: "/catalogo?age=teens" },
-  { label: "Adultos", href: "/catalogo?age=adults" },
-  { label: "Polos", href: "/catalogo?category=polos" },
-  { label: "Calzado", href: "/catalogo?category=calzado" },
-  { label: "Gorras", href: "/catalogo?category=gorras" },
-  { label: "Ofertas", href: "/catalogo?sale=1" },
-  { label: "Contacto", href: "/paginas/contacto" },
+  { label: "Niños", href: "/catalog?age=kids" },
+  { label: "Jóvenes", href: "/catalog?age=teens" },
+  { label: "Adultos", href: "/catalog?age=adults" },
+  { label: "Polos", href: "/catalog?category=polos" },
+  { label: "Calzado", href: "/catalog?category=calzado" },
+  { label: "Gorras", href: "/catalog?category=gorras" },
+  { label: "Ofertas", href: "/catalog?sale=1" },
+  { label: "Contacto", href: "/pages/contacto" },
 ];
 
 export const STORE_MOBILE_NAV: StoreNavItem[] = [
   { label: "Inicio", href: "/" },
-  { label: "Niños", href: "/catalogo?age=kids" },
-  { label: "Jóvenes", href: "/catalogo?age=teens" },
-  { label: "Adultos", href: "/catalogo?age=adults" },
-  { label: "Polos", href: "/catalogo?category=polos" },
-  { label: "Camisas", href: "/catalogo?category=camisas" },
-  { label: "Pantalones", href: "/catalogo?category=pantalones" },
-  { label: "Casacas", href: "/catalogo?category=casacas" },
-  { label: "Calzado", href: "/catalogo?category=calzado" },
-  { label: "Gorras", href: "/catalogo?category=gorras" },
-  { label: "Accesorios", href: "/catalogo?category=accesorios" },
-  { label: "Ofertas", href: "/catalogo?sale=1" },
-  { label: "Guía de tallas", href: "/guia-de-tallas" },
-  { label: "Contacto", href: "/paginas/contacto" },
+  { label: "Niños", href: "/catalog?age=kids" },
+  { label: "Jóvenes", href: "/catalog?age=teens" },
+  { label: "Adultos", href: "/catalog?age=adults" },
+  { label: "Polos", href: "/catalog?category=polos" },
+  { label: "Camisas", href: "/catalog?category=camisas" },
+  { label: "Pantalones", href: "/catalog?category=pantalones" },
+  { label: "Casacas", href: "/catalog?category=casacas" },
+  { label: "Calzado", href: "/catalog?category=calzado" },
+  { label: "Gorras", href: "/catalog?category=gorras" },
+  { label: "Accesorios", href: "/catalog?category=accesorios" },
+  { label: "Ofertas", href: "/catalog?sale=1" },
+  { label: "Guía de tallas", href: "/size-guide" },
+  { label: "Contacto", href: "/pages/contacto" },
 ];

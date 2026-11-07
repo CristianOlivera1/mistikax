@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Icon } from "@/components/icons/icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,8 +11,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginSchema, type LoginValues } from "../schema";
+import { signInAction } from "../actions";
 
 export function LoginForm() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const form = useForm<LoginValues>({
@@ -24,10 +28,20 @@ export function LoginForm() {
   });
   const { errors } = form.formState;
 
-  const onSubmit = () => {
-    setStatusMessage(
-      "El acceso estará disponible cuando se active la autenticación del panel.",
-    );
+  const onSubmit = (values: LoginValues) => {
+    setStatusMessage(null);
+
+    startTransition(async () => {
+      const result = await signInAction(values);
+
+      if (!result.ok) {
+        setStatusMessage(result.message);
+        return;
+      }
+
+      router.replace("/admin");
+      router.refresh();
+    });
   };
 
   return (
@@ -138,8 +152,8 @@ export function LoginForm() {
         </a>
       </div>
 
-      <Button type="submit" className="h-10 w-full">
-        Ingresar al panel
+      <Button type="submit" className="h-10 w-full" disabled={isPending}>
+        {isPending ? "Ingresando…" : "Ingresar al panel"}
         <Icon icon="lucide:arrow-right" width={15} height={15} aria-hidden="true" />
       </Button>
 
