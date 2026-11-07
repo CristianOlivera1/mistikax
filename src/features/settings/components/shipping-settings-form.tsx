@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { STORE } from "@/lib/constants";
+import { updateShippingSettingsAction } from "../actions";
 import type { SiteSettings } from "../types";
 import { shippingSettingsSchema, type ShippingSettingsValues } from "../schema";
 
@@ -28,11 +29,17 @@ export function ShippingSettingsForm({ settings }: ShippingSettingsFormProps) {
 
   return (
     <form
-      onSubmit={form.handleSubmit(() =>
-        toast.info(
-          "La configuración está validada. El guardado se habilitará en la Fase 5.",
-        ),
-      )}
+      onSubmit={form.handleSubmit(async (values) => {
+        const result = await updateShippingSettingsAction(values);
+
+        if (result.status === "error") {
+          toast.error(result.message);
+          return;
+        }
+
+        toast.success("Configuración de envíos guardada.");
+        form.reset(values);
+      })}
       noValidate
       className="space-y-4"
     >

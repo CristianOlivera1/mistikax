@@ -25,8 +25,8 @@ type SettingsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function SettingsContent({ tab }: { tab: SettingsTab }) {
-  const settings = getSiteSettings();
+async function SettingsContent({ tab }: { tab: SettingsTab }) {
+  const settings = await getSiteSettings();
 
   if (tab === "shipping") {
     return <ShippingSettingsForm settings={settings} />;
@@ -95,3 +95,5 @@ export default async function SettingsPage({
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

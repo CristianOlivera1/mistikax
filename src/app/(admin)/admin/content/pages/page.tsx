@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   title: "Páginas",
 };
 
-export default function ContentPagesPage() {
-  const pages = getPages();
+export default async function ContentPagesPage() {
+  const pages = await getPages();
 
   return (
     <div className="space-y-4">
@@ -38,3 +38,5 @@ export default function ContentPagesPage() {
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

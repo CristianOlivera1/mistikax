@@ -6,6 +6,7 @@ import { Icon } from "@/components/icons/icon";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Button } from "@/components/ui/button";
+import { deleteFaqAction, moveFaqAction } from "../actions";
 import type { FaqItem } from "../types";
 import { FaqDialog } from "./faq-dialog";
 
@@ -36,7 +37,11 @@ export function FaqList({ faqs }: FaqListProps) {
               size="icon-sm"
               aria-label={`Subir ${faq.question}`}
               disabled={index === 0}
-              onClick={() => toast.info("El orden se guardará en la Fase 5.")}
+              onClick={async () => {
+                const result = await moveFaqAction(faq.id, "up");
+
+                if (result.status === "error") toast.error(result.message);
+              }}
             >
               <Icon
                 icon="lucide:arrow-up"
@@ -51,7 +56,11 @@ export function FaqList({ faqs }: FaqListProps) {
               size="icon-sm"
               aria-label={`Bajar ${faq.question}`}
               disabled={index === faqs.length - 1}
-              onClick={() => toast.info("El orden se guardará en la Fase 5.")}
+              onClick={async () => {
+                const result = await moveFaqAction(faq.id, "down");
+
+                if (result.status === "error") toast.error(result.message);
+              }}
             >
               <Icon
                 icon="lucide:arrow-down"
@@ -80,14 +89,21 @@ export function FaqList({ faqs }: FaqListProps) {
           if (!open) setDeleteId(null);
         }}
         title="Eliminar pregunta"
-        description={`¿Eliminar "${pendingDelete?.question ?? "esta pregunta"}"? Esta acción se habilitará cuando las preguntas estén conectadas.`}
+        description={`¿Eliminar "${pendingDelete?.question ?? "esta pregunta"}"?`}
         confirmLabel="Eliminar"
         tone="danger"
-        onConfirm={() => {
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+
+          const result = await deleteFaqAction(pendingDelete.id);
+
+          if (result.status === "error") {
+            toast.error(result.message);
+            return;
+          }
+
+          toast.success("Pregunta eliminada.");
           setDeleteId(null);
-          toast.info(
-            "La eliminación se habilitará cuando las preguntas estén conectadas (Fase 5).",
-          );
         }}
       />
     </>

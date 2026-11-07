@@ -9,9 +9,11 @@ export const metadata: Metadata = {
 
 export default async function HomeContentPage() {
   const [content, images] = await Promise.all([
-    Promise.resolve(getHomeContent()),
+    getHomeContent(),
     getMediaPaths(),
   ]);
 
   return <HomeContentForm content={content} images={images} />;
 }
+
+export const dynamic = "force-dynamic";

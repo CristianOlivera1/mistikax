@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { updateGeneralSettingsAction } from "../actions";
 import type { SiteSettings } from "../types";
 import { generalSettingsSchema, type GeneralSettingsValues } from "../schema";
 
@@ -31,11 +32,17 @@ export function GeneralSettingsForm({ settings }: GeneralSettingsFormProps) {
 
   return (
     <form
-      onSubmit={form.handleSubmit(() =>
-        toast.info(
-          "La configuración está validada. El guardado se habilitará en la Fase 5.",
-        ),
-      )}
+      onSubmit={form.handleSubmit(async (values) => {
+        const result = await updateGeneralSettingsAction(values);
+
+        if (result.status === "error") {
+          toast.error(result.message);
+          return;
+        }
+
+        toast.success("Configuración guardada.");
+        form.reset(values);
+      })}
       noValidate
       className="space-y-4"
     >

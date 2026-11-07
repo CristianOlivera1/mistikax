@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   title: "Preguntas frecuentes",
 };
 
-export default function FaqsPage() {
-  const faqs = getFaqs();
+export default async function FaqsPage() {
+  const faqs = await getFaqs();
 
   return (
     <div className="space-y-4">
@@ -24,3 +24,5 @@ export default function FaqsPage() {
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

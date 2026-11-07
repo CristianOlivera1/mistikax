@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: "Descuentos",
 };
 
-export default function CouponsPage() {
-  const coupons = getCoupons();
+export default async function CouponsPage() {
+  const coupons = await getCoupons();
 
   return (
     <div className="space-y-4">
@@ -33,3 +33,5 @@ export default function CouponsPage() {
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

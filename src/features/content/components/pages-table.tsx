@@ -28,7 +28,7 @@ export function PagesTable({ pages }: PagesTableProps) {
       header: "URL",
       cell: (page) => (
         <span className="text-muted-foreground font-mono text-xs">
-          /paginas/{page.id}
+          /pages/{page.id}
         </span>
       ),
     },

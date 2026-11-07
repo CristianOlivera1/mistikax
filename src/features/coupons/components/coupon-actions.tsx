@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
+import { deleteCouponAction } from "../actions";
 import type { AdminCoupon } from "../types";
 import { CouponDialog } from "./coupon-dialog";
 
@@ -30,14 +31,19 @@ export function CouponActions({ coupon }: CouponActionsProps) {
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title="Eliminar descuento"
-        description={`¿Eliminar el código ${coupon.code}? Esta acción se habilitará cuando los descuentos estén conectados.`}
+        description={`¿Eliminar el código ${coupon.code}?`}
         confirmLabel="Eliminar"
         tone="danger"
-        onConfirm={() => {
+        onConfirm={async () => {
+          const result = await deleteCouponAction(coupon.code);
+
+          if (result.status === "error") {
+            toast.error(result.message);
+            return;
+          }
+
+          toast.success("Descuento eliminado.");
           setDeleteOpen(false);
-          toast.info(
-            "La eliminación se habilitará cuando los descuentos estén conectados (Fase 5).",
-          );
         }}
       />
     </div>

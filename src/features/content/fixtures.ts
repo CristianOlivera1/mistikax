@@ -16,7 +16,7 @@ export const HOME_CONTENT: HomeContent = {
     subtitle:
       "Ropa y calzado para hombre. Para niños, jóvenes y adultos, en todas las tallas.",
     cta: "Ver catálogo",
-    link: "/catalogo",
+    link: "/catalog",
     image: "/images/products/camisa-lino.svg",
   },
   sections: [

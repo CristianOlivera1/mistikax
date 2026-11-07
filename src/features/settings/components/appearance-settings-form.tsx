@@ -12,6 +12,7 @@ import {
   appearanceSettingsSchema,
   type AppearanceSettingsValues,
 } from "../schema";
+import { updateAppearanceSettingsAction } from "../actions";
 
 type AppearanceSettingsFormProps = {
   settings: SiteSettings;
@@ -31,11 +32,17 @@ export function AppearanceSettingsForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit(() =>
-        toast.info(
-          "La configuración está validada. El guardado se habilitará en la Fase 5.",
-        ),
-      )}
+      onSubmit={form.handleSubmit(async (values) => {
+        const result = await updateAppearanceSettingsAction(values);
+
+        if (result.status === "error") {
+          toast.error(result.message);
+          return;
+        }
+
+        toast.success("Apariencia actualizada.");
+        form.reset(values);
+      })}
       noValidate
       className="space-y-4"
     >

@@ -31,3 +31,5 @@ export default async function MediaPage() {
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";

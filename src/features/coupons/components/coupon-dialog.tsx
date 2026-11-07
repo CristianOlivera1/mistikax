@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { STORE } from "@/lib/constants";
+import { createCouponAction, updateCouponAction } from "../actions";
 import { couponFormSchema, type CouponFormValues } from "../schema";
 import type { AdminCoupon } from "../types";
 
@@ -60,12 +61,19 @@ export function CouponDialog({ coupon }: CouponDialogProps) {
     if (!next) form.reset(defaultValues);
   }
 
-  function onSubmit(values: CouponFormValues) {
+  async function onSubmit(values: CouponFormValues) {
+    const result = coupon
+      ? await updateCouponAction(coupon.code, values)
+      : await createCouponAction(values);
+
+    if (result.status === "error") {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success(coupon ? "Descuento actualizado." : "Descuento creado.");
     setOpen(false);
     form.reset(defaultValues);
-    toast.info(
-      `El descuento ${values.code} está validado. El guardado se habilitará en la Fase 5.`,
-    );
   }
 
   return (
@@ -113,6 +121,7 @@ export function CouponDialog({ coupon }: CouponDialogProps) {
               autoCapitalize="characters"
               placeholder="BIENVENIDO10"
               className="font-mono uppercase"
+              disabled={Boolean(coupon)}
               aria-invalid={Boolean(errors.code)}
               {...form.register("code")}
             />

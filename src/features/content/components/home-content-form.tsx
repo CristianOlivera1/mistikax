@@ -9,12 +9,12 @@ import { FormField } from "@/components/shared/form-field";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { SwitchField } from "@/components/shared/switch-field";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { updateHomeContentAction } from "../actions";
 import type { HomeContent } from "../types";
 import { homeContentSchema, type HomeContentFormValues } from "../schema";
 
@@ -63,10 +63,16 @@ export function HomeContentForm({ content, images }: HomeContentFormProps) {
     });
   }
 
-  function onSubmit() {
-    toast.info(
-      "La portada está validada. El guardado se habilitará en la Fase 5.",
-    );
+  async function onSubmit(values: HomeContentFormValues) {
+    const result = await updateHomeContentAction(values);
+
+    if (result.status === "error") {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success("Portada actualizada.");
+    form.reset(values);
   }
 
   return (
@@ -81,12 +87,6 @@ export function HomeContentForm({ content, images }: HomeContentFormProps) {
         }
       />
 
-      <Alert className="bg-muted/40 mt-4">
-        <Icon icon="lucide:info" width={15} height={15} aria-hidden="true" />
-        <AlertDescription>
-          Vista previa del contenido. El guardado se habilitará en la Fase 5.
-        </AlertDescription>
-      </Alert>
 
       <form
         id="home-content-form"

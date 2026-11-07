@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { createFaqAction, updateFaqAction } from "../actions";
 import { faqFormSchema, type FaqFormValues } from "../schema";
 import type { FaqItem } from "../types";
 
@@ -47,12 +48,19 @@ export function FaqDialog({ faq }: FaqDialogProps) {
     if (!next) form.reset(defaultValues);
   }
 
-  function onSubmit() {
+  async function onSubmit(values: FaqFormValues) {
+    const result = faq
+      ? await updateFaqAction(faq.id, values)
+      : await createFaqAction(values);
+
+    if (result.status === "error") {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success(faq ? "Pregunta actualizada." : "Pregunta creada.");
     setOpen(false);
     form.reset(defaultValues);
-    toast.info(
-      "La pregunta está validada. El guardado se habilitará en la Fase 5.",
-    );
   }
 
   return (

@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/shared/section-card";
 import { SwitchField } from "@/components/shared/switch-field";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { updatePaymentSettingsAction } from "../actions";
 import type { SiteSettings } from "../types";
 import { paymentSettingsSchema, type PaymentSettingsValues } from "../schema";
 
@@ -43,11 +44,17 @@ export function PaymentSettingsForm({ settings }: PaymentSettingsFormProps) {
 
   return (
     <form
-      onSubmit={form.handleSubmit(() =>
-        toast.info(
-          "La configuración está validada. El guardado se habilitará en la Fase 5.",
-        ),
-      )}
+      onSubmit={form.handleSubmit(async (values) => {
+        const result = await updatePaymentSettingsAction(values);
+
+        if (result.status === "error") {
+          toast.error(result.message);
+          return;
+        }
+
+        toast.success("Configuración de pagos guardada.");
+        form.reset(values);
+      })}
       noValidate
       className="space-y-4"
     >

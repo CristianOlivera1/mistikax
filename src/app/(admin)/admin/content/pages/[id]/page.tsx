@@ -11,7 +11,7 @@ export async function generateMetadata({
   params,
 }: ContentPageDetailProps): Promise<Metadata> {
   const { id } = await params;
-  const page = getPageById(id);
+  const page = await getPageById(id);
 
   if (!page) notFound();
 
@@ -24,9 +24,11 @@ export default async function ContentPageDetail({
   params,
 }: ContentPageDetailProps) {
   const { id } = await params;
-  const page = getPageById(id);
+  const page = await getPageById(id);
 
   if (!page) notFound();
 
   return <PageForm page={page} />;
 }
+
+export const dynamic = "force-dynamic";

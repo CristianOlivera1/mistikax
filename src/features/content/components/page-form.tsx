@@ -2,19 +2,19 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { Icon } from "@/components/icons/icon";
 import { FormField } from "@/components/shared/form-field";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionCard } from "@/components/shared/section-card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { slugify } from "@/lib/slug";
+import { createPageAction, updatePageAction } from "../actions";
 import { PAGE_STATUSES, type ContentPage } from "../types";
 import { pageFormSchema, type PageFormValues } from "../schema";
 
@@ -34,6 +34,7 @@ function buildDefaultValues(page: ContentPage | undefined): PageFormValues {
 
 export function PageForm({ page }: PageFormProps) {
   const isNew = !page;
+  const router = useRouter();
   const [slugEdited, setSlugEdited] = useState(!isNew);
   const form = useForm<PageFormValues>({
     resolver: zodResolver(pageFormSchema),
@@ -57,10 +58,18 @@ export function PageForm({ page }: PageFormProps) {
     form.setValue("slug", slugify(title), { shouldValidate: false });
   }, [form, isNew, slugEdited, title]);
 
-  function onSubmit() {
-    toast.info(
-      "La página está validada. El guardado se habilitará en la Fase 5.",
-    );
+  async function onSubmit(values: PageFormValues) {
+    const result = isNew
+      ? await createPageAction(values)
+      : await updatePageAction(page.id, values);
+
+    if (result.status === "error") {
+      toast.error(result.message);
+      return;
+    }
+
+    toast.success(isNew ? "Página creada." : "Página actualizada.");
+    router.push("/admin/content/pages");
   }
 
   return (
@@ -84,14 +93,6 @@ export function PageForm({ page }: PageFormProps) {
           </>
         }
       />
-
-      <Alert className="bg-muted/40 mt-4">
-        <Icon icon="lucide:info" width={15} height={15} aria-hidden="true" />
-        <AlertDescription>
-          Vista previa de la página. El guardado y la publicación se habilitan
-          en la Fase 5.
-        </AlertDescription>
-      </Alert>
 
       <form
         id="page-form"
@@ -136,7 +137,7 @@ export function PageForm({ page }: PageFormProps) {
               error={errors.slug?.message}
               hint={
                 isNew
-                  ? `URL: /paginas/${slug || slugify(title) || "pagina"}`
+                  ? `URL: /pages/${slug || slugify(title) || "pagina"}`
                   : "El identificador es estable; cambiarlo requiere una redirección."
               }
             >

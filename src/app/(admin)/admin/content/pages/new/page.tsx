@@ -8,3 +8,5 @@ export const metadata: Metadata = {
 export default function NewContentPage() {
   return <PageForm />;
 }
+
+export const dynamic = "force-dynamic";
