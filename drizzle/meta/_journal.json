@@ -15,6 +15,20 @@
       "when": 1793912149678,
       "tag": "0001_media_source",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793918004483,
+      "tag": "0002_melted_bruce_banner",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794076741311,
+      "tag": "0003_profiles",
+      "breakpoints": true
     }
   ]
 }
