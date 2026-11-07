@@ -1,31 +1,48 @@
 import "server-only";
 
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  ne,
+  sql,
+} from "drizzle-orm";
+import { db } from "@/db";
+import {
+  categories,
+  orderItems,
+  orders,
+  productStock,
+  products,
+  siteSettings,
+} from "@/db/schema";
 import { formatDayMonth } from "@/lib/format";
 import {
   ADMIN_NAV,
   type AdminBadgeCounts,
   type AdminSearchItem,
 } from "@/lib/nav";
-import {
-  FIXTURE_LOW_STOCK_THRESHOLD,
-  FIXTURE_ORDERS,
-  FIXTURE_PRODUCTS,
-} from "./fixtures";
 import type {
   DashboardOverview,
   DashboardRange,
   LowStockItem,
   OrderFixture,
-  ProductFixture,
   SalesPoint,
   StockStatus,
+  TopProduct,
 } from "./types";
 
 const DAY_MS = 86_400_000;
+const LIMA_TZ = "America/Lima";
 
 function limaDayKey(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Lima",
+    timeZone: LIMA_TZ,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -36,20 +53,42 @@ function dayStart(dayKey: string): number {
   return Date.parse(`${dayKey}T15:00:00.000Z`);
 }
 
-function orderDayStart(order: OrderFixture): number {
-  return dayStart(order.createdAt.slice(0, 10));
+const SALES_DAY = sql<string>`to_char(${orders.createdAt} at time zone 'America/Lima', 'YYYY-MM-DD')`;
+
+async function getSalesByDay(
+  inclusiveFrom: Date,
+  exclusiveTo: Date,
+): Promise<Map<string, DayAggregate>> {
+  const rows = await db
+    .select({
+      day: SALES_DAY,
+      totalCents: sql<string>`coalesce(sum(${orders.totalCents}), 0)`,
+      orderCount: count(),
+    })
+    .from(orders)
+    .where(
+      and(
+        ne(orders.status, "cancelled"),
+        gte(orders.createdAt, inclusiveFrom),
+        lt(orders.createdAt, exclusiveTo),
+      ),
+    )
+    .groupBy(SALES_DAY)
+    .orderBy(SALES_DAY);
+  const byDay = new Map<string, DayAggregate>();
+
+  for (const row of rows) {
+    byDay.set(row.day, {
+      day: row.day,
+      totalCents: Number(row.totalCents),
+      orderCount: Number(row.orderCount),
+    });
+  }
+
+  return byDay;
 }
 
-function stockStatusOf(product: ProductFixture): StockStatus {
-  if (product.stockTotal === 0) return "out";
-  if (product.stockTotal <= FIXTURE_LOW_STOCK_THRESHOLD * product.sizeCount)
-    return "low";
-  return "ok";
-}
-
-function totalSales(orders: OrderFixture[]): number {
-  return orders.reduce((total, order) => total + order.totalCents, 0);
-}
+type DayAggregate = { day: string; totalCents: number; orderCount: number };
 
 export function parseDashboardRange(value: string | undefined): DashboardRange {
   if (value === "7") return 7;
@@ -57,18 +96,95 @@ export function parseDashboardRange(value: string | undefined): DashboardRange {
   return 30;
 }
 
-export function getAdminBadgeCounts(): AdminBadgeCounts {
+type StockStat = {
+  id: string;
+  name: string;
+  categoryName: string;
+  stockTotal: number;
+  sizeCount: number;
+  stockStatus: StockStatus;
+};
+
+async function getStockStats(): Promise<StockStat[]> {
+  const thresholdRows = await db
+    .select({ value: siteSettings.lowStockThreshold })
+    .from(siteSettings)
+    .where(eq(siteSettings.id, 1))
+    .limit(1);
+  const productRows = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      categoryName: categories.name,
+      status: products.status,
+    })
+    .from(products)
+    .innerJoin(categories, eq(products.categoryId, categories.id));
+  const stockRows = await db
+    .select({
+      productId: productStock.productId,
+      stockTotal: sql<string>`coalesce(sum(${productStock.quantity}), 0)`,
+      sizeCount: count(),
+    })
+    .from(productStock)
+    .groupBy(productStock.productId);
+  const threshold = thresholdRows[0]?.value ?? 5;
+  const stockByProduct = new Map(
+    stockRows.map((row) => [
+      row.productId,
+      { total: Number(row.stockTotal), sizes: Number(row.sizeCount) },
+    ]),
+  );
+
+  return productRows
+    .filter((row) => row.status !== "archived")
+    .map((row) => {
+      const stock = stockByProduct.get(row.id) ?? { total: 0, sizes: 0 };
+      let stockStatus: StockStatus;
+
+      if (stock.total === 0) stockStatus = "out";
+      else if (stock.total <= threshold * stock.sizes) stockStatus = "low";
+      else stockStatus = "ok";
+
+      return {
+        id: row.id,
+        name: row.name,
+        categoryName: row.categoryName,
+        stockTotal: stock.total,
+        sizeCount: stock.sizes,
+        stockStatus,
+      };
+    });
+}
+
+export async function getAdminBadgeCounts(): Promise<AdminBadgeCounts> {
+  const pendingRows = await db
+    .select({ value: count() })
+    .from(orders)
+    .where(eq(orders.status, "pending"));
+  const stats = await getStockStats();
+
   return {
-    pendingOrders: FIXTURE_ORDERS.filter((order) => order.status === "pending")
-      .length,
-    lowStock: FIXTURE_PRODUCTS.filter(
-      (product) =>
-        product.status !== "archived" && stockStatusOf(product) !== "ok",
-    ).length,
+    pendingOrders: Number(pendingRows[0]?.value ?? 0),
+    lowStock: stats.filter((item) => item.stockStatus !== "ok").length,
   };
 }
 
-export function getAdminSearchItems(): AdminSearchItem[] {
+export async function getAdminSearchItems(): Promise<AdminSearchItem[]> {
+  const productRows = await db
+    .select({ id: products.id, name: products.name })
+    .from(products)
+    .orderBy(asc(products.name));
+  const recentOrderRows = await db
+    .select({
+      id: orders.id,
+      number: orders.number,
+      customerName: orders.customerName,
+    })
+    .from(orders)
+    .orderBy(desc(orders.createdAt), desc(orders.number))
+    .limit(8);
+
   const navigation: AdminSearchItem[] = ADMIN_NAV.flatMap((group) =>
     group.items.map((item) => ({
       id: `nav:${item.href}`,
@@ -79,86 +195,123 @@ export function getAdminSearchItems(): AdminSearchItem[] {
     })),
   );
 
-  const products: AdminSearchItem[] = FIXTURE_PRODUCTS.map((product) => ({
-    id: `product:${product.id}`,
-    label: product.name,
-    href: `/admin/products/${product.id}`,
-    group: "Productos",
-    icon: "lucide:package",
-  }));
-
-  const orders: AdminSearchItem[] = FIXTURE_ORDERS.slice(0, 8).map((order) => ({
-    id: `order:${order.id}`,
-    label: `Pedido #${order.number} · ${order.customerName}`,
-    href: `/admin/orders/${order.id}`,
-    group: "Pedidos",
-    icon: "lucide:shopping-cart",
-  }));
-
-  return [...navigation, ...products, ...orders];
+  return [
+    ...navigation,
+    ...productRows.map<AdminSearchItem>((row) => ({
+      id: `product:${row.id}`,
+      label: row.name,
+      href: `/admin/products/${row.id}`,
+      group: "Productos",
+      icon: "lucide:package",
+    })),
+    ...recentOrderRows.map<AdminSearchItem>((row) => ({
+      id: `order:${row.id}`,
+      label: `Pedido #${row.number} · ${row.customerName}`,
+      href: `/admin/orders/${row.id}`,
+      group: "Pedidos",
+      icon: "lucide:shopping-cart",
+    })),
+  ];
 }
 
-export function getDashboardOverview(range: DashboardRange): DashboardOverview {
+export async function getDashboardOverview(
+  range: DashboardRange,
+): Promise<DashboardOverview> {
   const todayStart = dayStart(limaDayKey(new Date()));
-  const salesOrders = FIXTURE_ORDERS.filter(
-    (order) => order.status !== "cancelled",
+  const currentStartMs = todayStart - (range - 1) * DAY_MS;
+  const previousStartMs = todayStart - (range * 2 - 1) * DAY_MS;
+  const currentAggregate = await getSalesByDay(
+    new Date(currentStartMs),
+    new Date(todayStart + DAY_MS),
+  );
+  const previousAggregate = await getSalesByDay(
+    new Date(previousStartMs),
+    new Date(currentStartMs),
   );
 
-  const currentOrders = salesOrders.filter((order) => {
-    const daysAgo = Math.round((todayStart - orderDayStart(order)) / DAY_MS);
-    return daysAgo >= 0 && daysAgo < range;
-  });
-
-  const previousOrders = salesOrders.filter((order) => {
-    const daysAgo = Math.round((todayStart - orderDayStart(order)) / DAY_MS);
-    return daysAgo >= range && daysAgo < range * 2;
-  });
-
-  const salesCents = totalSales(currentOrders);
-  const previousSalesCents = totalSales(previousOrders);
-  const rangeStart = todayStart - (range - 1) * DAY_MS;
   const series: SalesPoint[] = [];
 
-  for (let day = rangeStart; day <= todayStart; day += DAY_MS) {
-    const date = new Date(day);
-    const key = date.toISOString().slice(0, 10);
+  for (let day = currentStartMs; day <= todayStart; day += DAY_MS) {
+    const key = new Date(day).toISOString().slice(0, 10);
+    const aggregate = currentAggregate.get(key);
+
     series.push({
       day: key,
-      label: formatDayMonth(date),
-      totalCents: totalSales(
-        currentOrders.filter((order) => order.createdAt.slice(0, 10) === key),
-      ),
+      label: formatDayMonth(new Date(day)),
+      totalCents: aggregate?.totalCents ?? 0,
     });
   }
 
-  const lowStock: LowStockItem[] = FIXTURE_PRODUCTS.filter(
-    (product) => product.status !== "archived",
-  )
-    .map((product) => ({
-      id: product.id,
-      name: product.name,
-      categoryName: product.categoryName,
-      stockTotal: product.stockTotal,
-      sizeCount: product.sizeCount,
-      stockStatus: stockStatusOf(product),
-    }))
-    .filter((product) => product.stockStatus !== "ok")
+  const salesCents = series.reduce((total, point) => total + point.totalCents, 0);
+  const previousSalesCents = [...previousAggregate.values()].reduce(
+    (total, item) => total + item.totalCents,
+    0,
+  );
+  const currentOrderCount = series.reduce(
+    (total, point) =>
+      total + (currentAggregate.get(point.day)?.orderCount ?? 0),
+    0,
+  );
+
+  const pendingRows = await db
+    .select({ value: count() })
+    .from(orders)
+    .where(eq(orders.status, "pending"));
+  const stats = await getStockStats();
+  const recentOrderRows = await db
+    .select()
+    .from(orders)
+    .orderBy(desc(orders.createdAt), desc(orders.number))
+    .limit(5);
+  const topRows = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      soldCount: products.soldCount,
+    })
+    .from(products)
+    .where(ne(products.status, "archived"))
+    .orderBy(desc(products.soldCount), asc(products.name))
+    .limit(5);
+
+  const recentIds = recentOrderRows.map((row) => row.id);
+  const recentItemCountRows =
+    recentIds.length > 0
+      ? await db
+          .select({
+            orderId: orderItems.orderId,
+            quantity: sql<string>`coalesce(sum(${orderItems.quantity}), 0)`,
+          })
+          .from(orderItems)
+          .where(inArray(orderItems.orderId, recentIds))
+          .groupBy(orderItems.orderId)
+      : [];
+  const itemCountByOrder = new Map(
+    recentItemCountRows.map((row) => [row.orderId, Number(row.quantity)]),
+  );
+  const recentOrders: OrderFixture[] = recentOrderRows.map((row) => ({
+    id: row.id,
+    number: row.number,
+    customerName: row.customerName,
+    status: row.status,
+    totalCents: row.totalCents,
+    itemCount: itemCountByOrder.get(row.id) ?? 0,
+    createdAt: row.createdAt.toISOString(),
+  }));
+  const lowStock: LowStockItem[] = stats
+    .filter((item) => item.stockStatus !== "ok")
     .sort((a, b) => a.stockTotal - b.stockTotal)
     .slice(0, 4);
 
   return {
     range,
-    periodLabel: `${formatDayMonth(new Date(rangeStart))} – ${formatDayMonth(new Date(todayStart))}`,
+    periodLabel: `${formatDayMonth(new Date(currentStartMs))} – ${formatDayMonth(new Date(todayStart))}`,
     kpis: {
       salesCents,
-      orders: currentOrders.length,
+      orders: currentOrderCount,
       averageTicketCents:
-        currentOrders.length > 0
-          ? Math.round(salesCents / currentOrders.length)
-          : 0,
-      pendingOrders: FIXTURE_ORDERS.filter(
-        (order) => order.status === "pending",
-      ).length,
+        currentOrderCount > 0 ? Math.round(salesCents / currentOrderCount) : 0,
+      pendingOrders: Number(pendingRows[0]?.value ?? 0),
       salesDeltaPercent:
         previousSalesCents > 0
           ? Math.round((salesCents / previousSalesCents - 1) * 100)
@@ -166,16 +319,11 @@ export function getDashboardOverview(range: DashboardRange): DashboardOverview {
     },
     series,
     lowStock,
-    recentOrders: FIXTURE_ORDERS.slice(0, 5),
-    topProducts: FIXTURE_PRODUCTS.filter(
-      (product) => product.status !== "archived",
-    )
-      .sort((a, b) => b.soldCount - a.soldCount)
-      .slice(0, 5)
-      .map((product) => ({
-        id: product.id,
-        name: product.name,
-        soldCount: product.soldCount,
-      })),
+    recentOrders,
+    topProducts: topRows.map<TopProduct>((row) => ({
+      id: row.id,
+      name: row.name,
+      soldCount: row.soldCount,
+    })),
   };
 }

@@ -28,7 +28,7 @@ export default async function AdminOverviewPage({
   searchParams,
 }: AdminOverviewPageProps) {
   const { range } = await searchParams;
-  const overview = getDashboardOverview(parseDashboardRange(range));
+  const overview = await getDashboardOverview(parseDashboardRange(range));
 
   return (
     <div className="space-y-4">
@@ -80,3 +80,5 @@ export default async function AdminOverviewPage({
     </div>
   );
 }
+
+export const dynamic = "force-dynamic";
