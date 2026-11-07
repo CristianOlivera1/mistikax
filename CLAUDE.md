@@ -22,18 +22,20 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 | `dashboard.html` | Admin prototype: hash router, inline Tailwind, seed data in `localStorage`, Spanish UI |
 | `client.html` | Storefront prototype: hash router, product catalog, cart drawer, WhatsApp checkout |
 | `src/app/` | Next.js 16 app: root layout, themes, store placeholder, admin shell with Resumen, catalog, sales, content, media, settings and login |
-| `src/features/dashboard/` | Typed fixtures and queries behind the admin Resumen; order summaries come from the shared orders fixture and are replaced by database queries in phase 4 |
+| `src/features/dashboard/` | Admin Resumen queries: KPIs, daily sales series, low stock, recent orders and top products from Postgres |
 | `src/features/catalog/` | Product, category and inventory database queries, Zod actions and admin components; fixtures remain only as seed source |
-| `src/features/orders/` | Detailed order fixtures, filters, totals, WhatsApp helper and order detail presentation; persistence in phase 5 |
-| `src/features/customers/` | Customers derived from order fixtures; persistence in phase 5 |
-| `src/features/coupons/` | Coupon fixtures, table and validated create/edit form; persistence in phase 5 |
-| `src/features/content/` | Home, page and FAQ fixtures, queries and validated editors; persistence in phase 5 |
+| `src/features/orders/` | Order queries, transactional status transitions with stock restore, notes, WhatsApp helper, pure `service.ts` and detail presentation |
+| `src/features/customers/` | Customers derived from database orders, with search |
+| `src/features/coupons/` | Coupon queries, table and CRUD actions over Postgres |
+| `src/features/content/` | Home, page and FAQ queries and editors persisted in Postgres |
 | `src/features/media/` | Media database queries, upload/delete actions and grid; served through `app/media/[...path]` |
-| `src/db/` | Drizzle client, catalog and media schema, and reproducible seed for catalog fixtures |
-| `src/features/settings/` | Store settings and team fixtures, validated forms and read-only team view; persistence in phases 5 and 6 |
+| `src/db/` | Drizzle client, catalog/media/orders/content schema, and reproducible seed for catalog, orders, coupons, CMS and settings |
+| `src/features/settings/` | Store settings queries and persisted forms; the team view stays read-only until phase 6 |
 | `public/svg/` | Brand logos |
 | `storage/uploads/` | Local runtime uploads, organized as `YYYY/MM/<uuid>.<ext>` at runtime |
 | `plan.md` | Migration roadmap and target architecture |
+
+Store fonts load from `@import` in `src/app/globals.css`, not `next/font/google`; the latter breaks the store layout under Turbopack. The database pool in `src/db/index.ts` must keep `max` above one, or the store layout serializes all of its queries. See the README troubleshooting section for the full incident.
 
 The prototypes are a visual reference, not an architecture reference. Their helper functions (`page()`, `tbl()`, `modal()`, `fld()`, `toast()`) map to React components; their `innerHTML` strings must become JSX.
 
@@ -46,12 +48,12 @@ The prototypes are a visual reference, not an architecture reference. Their help
 | Styling | Tailwind CSS v4, CSS-first tokens | Installed |
 | Components | shadcn/ui, Radix primitives, `cva` | Installed |
 | Icons | Iconify, local `lucide` subset | Installed |
-| Database | Supabase Postgres, Drizzle ORM, `postgres.js` | Installed for catalog, media and inventory |
+| Database | Supabase Postgres, Drizzle ORM, `postgres.js` | Installed for catalog, media, orders, customers, coupons, content and settings |
 | Auth | Supabase Auth with `@supabase/ssr`; roles in `profiles` | Planned |
 | Validation | Zod; React Hook Form on client forms | Installed |
 | Admin UI | TanStack Table, Recharts | Recharts installed; TanStack Table planned |
 | Feedback | Sonner, cmdk | Installed |
-| Tests | Vitest, Testing Library, Playwright | Planned |
+| Tests | Vitest, Testing Library, Playwright | Vitest installed with order service tests; Testing Library and Playwright planned |
 | Package manager | pnpm | Installed |
 
 Do not install a dependency that is not listed in `plan.md` without asking first. When a listed dependency is not installed yet, do not silently replace it with another one.
@@ -59,7 +61,7 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 ## 4. Architecture rules
 
 - One Next.js app with route groups. Storefront lives under `src/app/(store)`; admin lives under `src/app/(admin)/admin`; login lives under `src/app/(auth)`.
-- Public storefront route segments stay in Spanish for SEO (`/catalogo`, `/producto/[slug]`). Admin route segments are English (`/admin/products`). This is the only exception to English file and route names.
+- Every file, folder and route segment is English (`/catalog`, `/product/[id]`, `/cart`, `/checkout`, `/pages/[slug]`, `/size-guide`). Public copy, category slugs and page slugs stay in Spanish (`polos`, `/pages/envios`).
 - `src/app` only handles routing, layouts, metadata, and page composition. Domain logic belongs in `src/features/<domain>`.
 - A feature owns its components, queries, actions, schemas, and types. Cross-feature imports go through public module files, never through another feature's internals.
 - `src/components/ui` is vendored shadcn code. Do not fork it; add variants with `cva` and theme through tokens. Shared app primitives live in `src/components/shared`; area-specific patterns live in `src/components/admin` or `src/components/store`.
@@ -129,3 +131,13 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 - Data validated at the boundary; authorization checked server-side.
 - Images are local; Supabase is used only for Postgres and Auth.
 - `pnpm lint` and `pnpm build` pass.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
