@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Icon } from "@/components/icons/icon";
 import { STORE_MOBILE_NAV } from "@/lib/nav";
+import { CartSheet } from "@/features/cart/components/cart-sheet";
+import type { CartLineView } from "@/features/cart/queries";
+import type { CartTotals } from "@/features/cart/totals";
 
 type StoreHeaderActionsProps = {
   searchTop: string;
+  cart: {
+    lines: CartLineView[];
+    totals: CartTotals;
+    freeShippingCents: number;
+  };
 };
 
-export function StoreHeaderActions({ searchTop }: StoreHeaderActionsProps) {
+export function StoreHeaderActions({ searchTop, cart }: StoreHeaderActionsProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -39,7 +47,7 @@ export function StoreHeaderActions({ searchTop }: StoreHeaderActionsProps) {
     const value = new FormData(event.currentTarget).get("q");
     const query = typeof value === "string" ? value.trim() : "";
     setSearchOpen(false);
-    router.push(`/catalogo${query ? `?q=${encodeURIComponent(query)}` : ""}`);
+    router.push(`/catalog${query ? `?q=${encodeURIComponent(query)}` : ""}`);
   }
 
   return (
@@ -63,8 +71,13 @@ export function StoreHeaderActions({ searchTop }: StoreHeaderActionsProps) {
         >
           <Icon icon="lucide:menu" width={22} height={22} />
         </button>
+        <CartSheet
+          lines={cart.lines}
+          totals={cart.totals}
+          freeShippingCents={cart.freeShippingCents}
+        />
         <Link
-          href="/paginas/contacto"
+          href="/pages/contacto"
           className="bg-premium hover:bg-premium-hover hover:text-offwhite ml-2 hidden items-center px-6 py-3 text-xs font-bold tracking-wider transition-all md:flex"
         >
           CONTACTO
