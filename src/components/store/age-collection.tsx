@@ -23,7 +23,7 @@ export function AgeCollection({ byAge }: AgeCollectionProps) {
         return (
           <Link
             key={age}
-            href={`/catalogo?age=${age}`}
+            href={`/catalog?age=${age}`}
             className="group border-grey-light relative h-[340px] flex-1 overflow-hidden border-b transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] last:border-0 lg:h-auto lg:border-r lg:border-b-0 lg:last:border-r-0 lg:hover:flex-[2]"
           >
             {product ? (

@@ -71,7 +71,7 @@ export function BenefitsBlock({
         </div>
       ))}
       <Link
-        href="/guia-de-tallas"
+        href="/size-guide"
         className="group border-grey-light relative h-[260px] overflow-hidden border-r border-b md:col-span-2"
       >
         <Image

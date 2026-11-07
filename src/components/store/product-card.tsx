@@ -15,7 +15,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
     : 0;
 
   return (
-    <Link href={`/producto/${product.id}`} className="group block">
+    <Link href={`/product/${product.id}`} className="group block">
       <div className="border-grey-light bg-surface relative aspect-[4/5] overflow-hidden border">
         <Image
           src={product.images[0] ?? ""}

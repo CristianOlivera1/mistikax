@@ -33,7 +33,7 @@ export function StoreFooter({ categories, settings }: StoreFooterProps) {
                 <li key={category.id}>
                   <Link
                     className="hover:text-white/70"
-                    href={`/catalogo?category=${category.id}`}
+                    href={`/catalog?category=${category.id}`}
                   >
                     {category.name}
                   </Link>
@@ -47,27 +47,27 @@ export function StoreFooter({ categories, settings }: StoreFooterProps) {
             </h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
-                <Link className="hover:text-white/70" href="/guia-de-tallas">
+                <Link className="hover:text-white/70" href="/size-guide">
                   Guía de tallas
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-white/70" href="/paginas/envios">
+                <Link className="hover:text-white/70" href="/pages/envios">
                   Envíos
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-white/70" href="/paginas/cambios">
+                <Link className="hover:text-white/70" href="/pages/cambios">
                   Cambios y devoluciones
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-white/70" href="/paginas/nosotros">
+                <Link className="hover:text-white/70" href="/pages/nosotros">
                   Nosotros
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-white/70" href="/paginas/contacto">
+                <Link className="hover:text-white/70" href="/pages/contacto">
                   Contacto
                 </Link>
               </li>
@@ -117,13 +117,13 @@ export function StoreFooter({ categories, settings }: StoreFooterProps) {
           </p>
           <div className="flex gap-6">
             <Link
-              href="/paginas/politica-de-privacidad"
+              href="/pages/privacidad"
               className="hover:text-white"
             >
               Política de privacidad
             </Link>
             <Link
-              href="/paginas/terminos-del-servicio"
+              href="/pages/terminos-del-servicio"
               className="hover:text-white"
             >
               Términos del servicio

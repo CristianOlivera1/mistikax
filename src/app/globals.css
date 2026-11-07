@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Montserrat:wght@700;800&family=Oswald:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -124,6 +125,10 @@
 }
 
 .theme-store {
+  --font-manrope: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-oswald: "Oswald", ui-sans-serif, system-ui, sans-serif;
+  --font-montserrat: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-space-mono: "Space Mono", ui-monospace, monospace;
   --font-app-sans: var(--font-manrope);
   --font-app-mono: var(--font-space-mono);
   --font-app-heading: var(--font-oswald);

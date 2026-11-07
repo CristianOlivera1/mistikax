@@ -13,7 +13,7 @@ export function CategoriesGrid({ categories }: CategoriesGridProps) {
       {categories.map((category) => (
         <Link
           key={category.id}
-          href={`/catalogo?category=${category.id}`}
+          href={`/catalog?category=${category.id}`}
           className="group border-grey-light relative aspect-square overflow-hidden border-r border-b"
         >
           {category.showcaseImage ? (
@@ -38,7 +38,7 @@ export function CategoriesGrid({ categories }: CategoriesGridProps) {
         </Link>
       ))}
       <Link
-        href="/catalogo"
+        href="/catalog"
         className="hover:bg-premium-light border-grey-light flex aspect-square flex-col items-center justify-center gap-3 border-r border-b bg-white transition-colors"
       >
         <span className="font-heading text-2xl tracking-wide uppercase">

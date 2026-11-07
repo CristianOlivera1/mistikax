@@ -36,7 +36,7 @@ export function Hero({ title, subtitle, image, ctaLabel, ctaHref }: HeroProps) {
             {ctaLabel}
           </Link>
           <Link
-            href="/catalogo?sale=1"
+            href="/catalog?sale=1"
             className="hover:text-dark border border-white px-10 py-5 text-xs font-bold tracking-[0.2em] text-white uppercase transition-all hover:bg-white"
           >
             Ofertas

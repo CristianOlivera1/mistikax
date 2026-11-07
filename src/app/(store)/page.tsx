@@ -7,12 +7,7 @@ import { Hero } from "@/components/store/hero";
 import { ProductGrid } from "@/components/store/product-grid";
 import { SectionHeading } from "@/components/store/section-heading";
 import { StepsSection } from "@/components/store/steps-section";
-import {
-  getStoreBestSellers,
-  getStoreCategoryShowcase,
-  getStoreNewArrivals,
-  getStoreTopSellingByAge,
-} from "@/features/catalog/store-queries";
+import { getStoreHomeData } from "@/features/catalog/store-queries";
 import { getFaqs, getHomeContent } from "@/features/content/queries";
 import { getSiteSettings } from "@/features/settings/queries";
 
@@ -50,23 +45,11 @@ const SECTION_COPY = {
 } as const;
 
 export default async function StoreHomePage() {
-  const [
-    homeContent,
-    settings,
-    byAge,
-    categories,
-    bestSellers,
-    newArrivals,
-    faqs,
-  ] = await Promise.all([
-    getHomeContent(),
-    getSiteSettings(),
-    getStoreTopSellingByAge(),
-    getStoreCategoryShowcase(),
-    getStoreBestSellers(),
-    getStoreNewArrivals(),
-    getFaqs(),
-  ]);
+  const homeContent = await getHomeContent();
+  const settings = await getSiteSettings();
+  const storeHome = await getStoreHomeData();
+  const { byAge, categories, bestSellers, newArrivals } = storeHome;
+  const faqs = await getFaqs();
 
   const sections = homeContent.sections.filter((section) => section.visible);
 
@@ -96,7 +79,7 @@ export default async function StoreHomePage() {
           <section className="mx-auto max-w-[1400px] px-6 py-24">
             <SectionHeading
               {...SECTION_COPY["best-sellers"]}
-              linkHref="/catalogo"
+              linkHref="/catalog"
             />
             <ProductGrid products={bestSellers} />
           </section>
@@ -116,7 +99,7 @@ export default async function StoreHomePage() {
           <section className="mx-auto max-w-[1400px] px-6 py-24">
             <SectionHeading
               {...SECTION_COPY.new}
-              linkHref="/catalogo?sort=new"
+              linkHref="/catalog?sort=new"
             />
             <ProductGrid products={newArrivals} />
           </section>
