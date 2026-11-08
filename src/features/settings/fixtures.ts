@@ -1,4 +1,4 @@
-import type { SiteSettings, TeamMember } from "./types";
+import type { SiteSettings } from "./types";
 
 export const SITE_SETTINGS: SiteSettings = {
   storeName: "Mistikax",
@@ -18,18 +18,3 @@ export const SITE_SETTINGS: SiteSettings = {
   primaryColor: "#D4C5B9",
   accentColor: "#857262",
 };
-
-export const TEAM: TeamMember[] = [
-  {
-    id: "admin",
-    name: "Administrador",
-    email: "admin@mistikax.com",
-    role: "admin",
-  },
-  {
-    id: "maria",
-    name: "María Rojas",
-    email: "maria@mistikax.com",
-    role: "editor",
-  },
-];

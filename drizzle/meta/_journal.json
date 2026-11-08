@@ -29,6 +29,20 @@
       "when": 1794076741311,
       "tag": "0003_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794160000000,
+      "tag": "0004_profiles_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794160100000,
+      "tag": "0005_first_user_admin",
+      "breakpoints": true
     }
   ]
 }

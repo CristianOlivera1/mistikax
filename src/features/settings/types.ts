@@ -27,6 +27,7 @@ export type TeamMember = {
   name: string;
   email: string;
   role: Role;
+  active: boolean;
 };
 
 export const SETTINGS_TABS: Array<{

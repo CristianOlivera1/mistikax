@@ -1,18 +1,26 @@
 import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { ROLES } from "@/lib/constants";
 import type { TeamMember } from "../types";
+import { TeamMemberAccess, TeamMemberRole } from "./team-member-controls";
 
 type TeamTableProps = {
   members: TeamMember[];
+  currentUserId: string;
 };
 
-export function TeamTable({ members }: TeamTableProps) {
+export function TeamTable({ members, currentUserId }: TeamTableProps) {
   const columns: DataTableColumn<TeamMember>[] = [
     {
       id: "name",
       header: "Nombre",
-      cell: (member) => <span className="font-medium">{member.name}</span>,
+      cell: (member) => (
+        <span className="font-medium">
+          {member.name}
+          {member.id === currentUserId ? (
+            <span className="text-muted-foreground"> (tú)</span>
+          ) : null}
+        </span>
+      ),
     },
     {
       id: "email",
@@ -25,9 +33,32 @@ export function TeamTable({ members }: TeamTableProps) {
       id: "role",
       header: "Rol",
       cell: (member) => (
-        <StatusBadge tone={member.role === "admin" ? "info" : "neutral"}>
-          {ROLES[member.role]}
+        <TeamMemberRole
+          member={member}
+          isSelf={member.id === currentUserId}
+        />
+      ),
+    },
+    {
+      id: "status",
+      header: "Estado",
+      cell: (member) => (
+        <StatusBadge tone={member.active ? "success" : "neutral"}>
+          {member.active ? "Activo" : "Inactivo"}
         </StatusBadge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      className: "text-right",
+      cell: (member) => (
+        <div className="flex justify-end">
+          <TeamMemberAccess
+            member={member}
+            isSelf={member.id === currentUserId}
+          />
+        </div>
       ),
     },
   ];

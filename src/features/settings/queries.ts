@@ -1,10 +1,11 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
-import { siteSettings } from "@/db/schema";
-import { SITE_SETTINGS, TEAM } from "./fixtures";
+import { profiles, siteSettings } from "@/db/schema";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { SITE_SETTINGS } from "./fixtures";
 import {
   SETTINGS_TABS,
   type SettingsTab,
@@ -58,6 +59,41 @@ export const getSiteSettings = cache(
   },
 );
 
-export function getTeam(): TeamMember[] {
-  return TEAM.map((member) => ({ ...member }));
-}
+export const getTeam = cache(async function getTeam(): Promise<TeamMember[]> {
+  const rows = await db
+    .select()
+    .from(profiles)
+    .orderBy(asc(profiles.createdAt));
+
+  if (rows.length === 0) return [];
+
+  const emails = new Map<string, string>();
+  let page: number | null = 1;
+
+  while (page) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+
+    if (error) break;
+
+    for (const user of data.users) {
+      if (user.email) emails.set(user.id, user.email);
+    }
+
+    page = data.nextPage;
+  }
+
+  return rows.map((row) => {
+    const email = emails.get(row.id);
+
+    return {
+      id: row.id,
+      name: row.fullName || email || "Sin nombre",
+      email: email ?? "—",
+      role: row.role,
+      active: row.active,
+    };
+  });
+});

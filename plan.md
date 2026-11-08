@@ -29,7 +29,7 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | 3 | Ventas y contenido (UI) | Completada: pedidos, clientes, descuentos, CMS y ajustes con fixtures | No |
 | 4 | Catálogo de punta a punta | Completada: Drizzle, seed, CRUD real y subidas locales | Sí |
 | 5 | Ventas y contenido de punta a punta | Completada: pedidos, transacciones, CMS y ajustes persistentes | Sí |
-| 6 | Autenticación, roles y equipo | En curso: Supabase Auth, proxy, login real, perfiles y roles; falta la tabla de equipo | No |
+| 6 | Autenticación, roles y equipo | En curso: auth, proxy, perfiles, roles y tabla de equipo listos; falta validar el login con una cuenta real | No |
 | 6 | Auth y roles | Login, sesiones, permisos y equipo | Sí |
 | 7 | Tienda: shell, footer y home | Shell de tienda, navegación, búsqueda y portada con datos reales | Sí (lectura del catálogo) |
 | 8 | Tienda: catálogo | `/catalog` con filtros, orden, búsqueda y paginación | Sí (lectura) |

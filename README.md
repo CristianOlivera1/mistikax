@@ -81,7 +81,7 @@ Local assets are in `public/images` and `public/svg`. Runtime uploads will be st
 
 Phases 1–5 are complete: the admin panel foundation, catalog with real Supabase Postgres persistence, product CRUD, archiving, duplication, inventory and category constraints, local media uploads served through `/media/[...path]`, and persistent orders, coupons, CMS pages, FAQs, home content and store settings. Order status transitions are transactional: cancelling restores stock once and every change is recorded in the order history. The admin Resumen computes its KPIs and daily series from real orders.
 
-Phase 6 is in progress: Supabase Auth sessions, cookie refresh in `src/proxy.ts`, real sign-in and sign-out, and `profiles` with `admin`/`editor` roles. Team management (list, change role, deactivate) is next. Accounts are created in Supabase Auth: the first user becomes `admin` through migration `0003_profiles`, later users default to `editor`. Pending: uploads made by real users, and Playwright end-to-end coverage.
+Phase 6 is in progress: Supabase Auth sessions, cookie refresh in `src/proxy.ts`, real sign-in and sign-out, and `profiles` with `admin`/`editor` roles. Settings → Equipo lists the real profiles with their emails from the Auth Admin API, changes roles and deactivates access (the account is banned, not deleted); it never leaves the panel without an active admin. `profiles` has RLS enabled with read-only access to your own row. Accounts are created in Supabase Auth: the first one becomes `admin` through the trigger in migration `0005_first_user_admin`, later ones default to `editor`. Pending: validating sign-in with a real account, uploads made by real users, and Playwright end-to-end coverage.
 
 ## Documentation
 
