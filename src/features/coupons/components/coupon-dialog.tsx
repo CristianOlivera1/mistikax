@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { FormField } from "@/components/shared/form-field";
@@ -19,7 +19,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { STORE } from "@/lib/constants";
 import { createCouponAction, updateCouponAction } from "../actions";
 import { couponFormSchema, type CouponFormValues } from "../schema";
@@ -41,6 +47,7 @@ function getDefaultValues(coupon: AdminCoupon | undefined): CouponFormValues {
           : coupon.value / 100,
     expiresAt: coupon?.expiresAt ?? "",
     active: coupon?.active ?? true,
+    maxUses: coupon?.maxUses ?? 0,
   };
 }
 
@@ -133,14 +140,30 @@ export function CouponDialog({ coupon }: CouponDialogProps) {
               htmlFor="coupon-kind"
               error={errors.kind?.message}
             >
-              <NativeSelect
-                id="coupon-kind"
-                aria-invalid={Boolean(errors.kind)}
-                {...form.register("kind")}
-              >
-                <option value="percent">Porcentaje</option>
-                <option value="fixed">Monto fijo</option>
-              </NativeSelect>
+              <Controller
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                  >
+                    <SelectTrigger
+                      id="coupon-kind"
+                      aria-invalid={Boolean(errors.kind)}
+                      onBlur={field.onBlur}
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percent">Porcentaje</SelectItem>
+                      <SelectItem value="fixed">Monto fijo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
 
             <FormField
@@ -172,6 +195,23 @@ export function CouponDialog({ coupon }: CouponDialogProps) {
               type="date"
               aria-invalid={Boolean(errors.expiresAt)}
               {...form.register("expiresAt")}
+            />
+          </FormField>
+
+          <FormField
+            label="Límite de usos"
+            htmlFor="coupon-max-uses"
+            error={errors.maxUses?.message}
+            hint="0 = sin límite."
+          >
+            <Input
+              id="coupon-max-uses"
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              aria-invalid={Boolean(errors.maxUses)}
+              {...form.register("maxUses", { valueAsNumber: true })}
             />
           </FormField>
 

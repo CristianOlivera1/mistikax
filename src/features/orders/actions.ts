@@ -4,8 +4,15 @@ import { revalidatePath } from "next/cache";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { orderItems, orderStatusHistory, orders, productStock } from "@/db/schema";
+import {
+  orderItems,
+  orderStatusHistory,
+  orders,
+  productStock,
+  products,
+} from "@/db/schema";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/constants";
+import { requireRole } from "@/features/auth/queries";
 import {
   buildStockRestoreDeltas,
   canTransitionOrderStatus,
@@ -34,6 +41,8 @@ export async function transitionOrderStatusAction(
   rawOrderId: string,
   next: OrderStatus,
 ): Promise<OrderActionResult> {
+  const session = await requireRole("admin");
+
   const parsedId = orderIdSchema.safeParse(rawOrderId);
 
   if (!parsedId.success) {
@@ -48,7 +57,8 @@ export async function transitionOrderStatusAction(
         .select()
         .from(orders)
         .where(eq(orders.id, orderId))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       if (!order) {
         throw new Error("El pedido no existe.");
@@ -95,6 +105,24 @@ export async function transitionOrderStatusAction(
               ),
             );
         }
+
+        const soldByProduct = new Map<string, number>();
+        for (const row of itemRows) {
+          if (!row.productId) continue;
+          soldByProduct.set(
+            row.productId,
+            (soldByProduct.get(row.productId) ?? 0) + row.quantity,
+          );
+        }
+
+        for (const [productId, quantity] of soldByProduct) {
+          await tx
+            .update(products)
+            .set({
+              soldCount: sql`greatest(0, ${products.soldCount} - ${quantity})`,
+            })
+            .where(eq(products.id, productId));
+        }
       }
 
       await tx
@@ -103,7 +131,7 @@ export async function transitionOrderStatusAction(
         .where(eq(orders.id, orderId));
       await tx
         .insert(orderStatusHistory)
-        .values({ orderId, status: next, changedBy: "admin" });
+        .values({ orderId, status: next, changedBy: session.email });
     });
   } catch (error) {
     return {
@@ -124,6 +152,8 @@ export async function updateOrderNoteAction(
   rawOrderId: string,
   rawNote: string,
 ): Promise<OrderActionResult> {
+  await requireRole("admin");
+
   const parsedId = orderIdSchema.safeParse(rawOrderId);
   const parsedNote = noteSchema.safeParse(rawNote);
 

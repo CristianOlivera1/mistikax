@@ -3,18 +3,19 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { serverEnv } from "@/lib/env";
 
-const DEVELOPMENT_SECRET = "mistikax-development-cart-secret-change-me-please";
-
-function getSecret(): string {
-  return serverEnv.CART_COOKIE_SECRET ?? DEVELOPMENT_SECRET;
-}
+const TOKEN_TTL_SECONDS = 60 * 60 * 24;
 
 function sign(value: string): string {
-  return createHmac("sha256", getSecret()).update(value).digest("base64url");
+  return createHmac("sha256", serverEnv.CART_COOKIE_SECRET)
+    .update(value)
+    .digest("base64url");
 }
 
 export function signOrderToken(orderId: string, number: number): string {
-  return sign(`order:${orderId}:${number}`);
+  const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
+  const signature = sign(`order:${orderId}:${number}:${expiresAt}`);
+
+  return `${expiresAt}.${signature}`;
 }
 
 export function verifyOrderToken(
@@ -22,9 +23,19 @@ export function verifyOrderToken(
   number: number,
   token: string,
 ): boolean {
-  const expected = signOrderToken(orderId, number);
+  const separator = token.indexOf(".");
 
-  if (token.length !== expected.length) return false;
+  if (separator <= 0) return false;
 
-  return timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+  const expiresAt = Number.parseInt(token.slice(0, separator), 10);
+  const signature = token.slice(separator + 1);
+
+  if (!Number.isFinite(expiresAt)) return false;
+  if (expiresAt <= Math.floor(Date.now() / 1000)) return false;
+
+  const expected = sign(`order:${orderId}:${number}:${expiresAt}`);
+
+  if (signature.length !== expected.length) return false;
+
+  return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }

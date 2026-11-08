@@ -2,17 +2,12 @@ import "server-only";
 import { z } from "zod";
 
 const serverEnvSchema = z.object({
-  DATABASE_URL: z.string().url().optional(),
+  DATABASE_URL: z.string().url(),
   DIRECT_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
   SUPABASE_SECRET_KEY: z.string().min(1).optional(),
-  CART_COOKIE_SECRET: z
-    .string()
-    .optional()
-    .transform((value) =>
-      value && value.length >= 32 ? value : undefined,
-    ),
+  CART_COOKIE_SECRET: z.string().min(32),
   UPLOAD_DIR: z.string().min(1).default("./storage/uploads"),
 });
 

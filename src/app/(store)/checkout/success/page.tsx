@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderConfirmation } from "@/features/checkout/queries";
+import { SHIPPING_METHOD_LABELS } from "@/features/checkout/shipping";
 import { getSiteSettings } from "@/features/settings/queries";
 import { formatMoney } from "@/lib/format";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
@@ -48,8 +49,14 @@ export default async function CheckoutSuccessPage({
         ¡Gracias, {order.customerName}!
       </h1>
       <p className="text-grey-dark mt-4 text-sm leading-relaxed">
-        Registramos tu pedido y lo preparamos para {order.city}. Coordina el pago
-        y la entrega por WhatsApp con nuestro equipo.
+        Registramos tu pedido y lo preparamos para {order.city}. Coordina el
+        pago y la entrega por WhatsApp con nuestro equipo.
+      </p>
+      <p className="text-grey-dark mt-2 text-[11px] tracking-widest uppercase">
+        {SHIPPING_METHOD_LABELS[order.shippingMethod]}
+        {order.shippingMethod === "pickup"
+          ? ""
+          : ` · ${order.address}, ${order.city}`}
       </p>
 
       <div className="border-grey-light mt-10 border">
@@ -71,6 +78,14 @@ export default async function CheckoutSuccessPage({
             </li>
           ))}
         </ul>
+        <div className="border-grey-light flex items-center justify-between border-t px-5 py-3 text-sm">
+          <span className="text-grey-dark">Envío</span>
+          <span>
+            {order.shippingCents === 0
+              ? "Gratis"
+              : formatMoney(order.shippingCents)}
+          </span>
+        </div>
         <div className="border-grey-light flex items-center justify-between border-t px-5 py-4 text-base font-semibold">
           <span>Total</span>
           <span>{formatMoney(order.totalCents)}</span>

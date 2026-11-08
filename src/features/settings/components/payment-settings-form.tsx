@@ -62,7 +62,9 @@ export function PaymentSettingsForm({ settings }: PaymentSettingsFormProps) {
         <SwitchField
           id="payment-card"
           label="Tarjeta de crédito o débito"
+          description="Próximamente"
           checked={paymentCard}
+          disabled
           onCheckedChange={(checked) =>
             form.setValue("paymentCard", checked, { shouldValidate: true })
           }
@@ -86,8 +88,9 @@ export function PaymentSettingsForm({ settings }: PaymentSettingsFormProps) {
         <SwitchField
           id="payment-wallet"
           label="Billeteras digitales"
-          description="Yape, Plin u otras."
+          description="Yape, Plin u otras. Próximamente."
           checked={paymentWallet}
+          disabled
           onCheckedChange={(checked) =>
             form.setValue("paymentWallet", checked, { shouldValidate: true })
           }

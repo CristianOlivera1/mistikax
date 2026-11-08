@@ -10,7 +10,12 @@ export type SiteSettings = {
   whatsapp: string;
   address: string;
   stockThreshold: number;
-  shippingCents: number;
+  shippingLimaCents: number;
+  shippingLimaOuterCents: number;
+  shippingProvincesCents: number;
+  pickupEnabled: boolean;
+  deliveryEnabled: boolean;
+  courierEnabled: boolean;
   freeShippingCents: number;
   leadTime: string;
   paymentCard: boolean;

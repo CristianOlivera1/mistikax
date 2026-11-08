@@ -26,6 +26,12 @@ export const couponFormSchema = z
         "Selecciona una fecha válida.",
       ),
     active: z.boolean(),
+    maxUses: z
+      .number()
+      .int("El límite debe ser un número entero.")
+      .min(0, "El límite no puede ser negativo.")
+      .max(100000, "El límite es demasiado alto.")
+      .optional(),
   })
   .superRefine((values, context) => {
     if (

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { profiles, siteSettings } from "@/db/schema";
@@ -45,7 +45,12 @@ export const getSiteSettings = cache(
       whatsapp: row.whatsapp,
       address: row.address,
       stockThreshold: row.lowStockThreshold,
-      shippingCents: row.shippingCents,
+      shippingLimaCents: row.shippingLimaCents,
+      shippingLimaOuterCents: row.shippingLimaOuterCents,
+      shippingProvincesCents: row.shippingProvincesCents,
+      pickupEnabled: row.pickupEnabled,
+      deliveryEnabled: row.deliveryEnabled,
+      courierEnabled: row.courierEnabled,
       freeShippingCents: row.freeShippingThresholdCents,
       leadTime: row.leadTime,
       paymentCard: row.paymentCard,
@@ -63,6 +68,7 @@ export const getTeam = cache(async function getTeam(): Promise<TeamMember[]> {
   const rows = await db
     .select()
     .from(profiles)
+    .where(inArray(profiles.role, ["admin", "editor"]))
     .orderBy(asc(profiles.createdAt));
 
   if (rows.length === 0) return [];
@@ -92,7 +98,7 @@ export const getTeam = cache(async function getTeam(): Promise<TeamMember[]> {
       id: row.id,
       name: row.fullName || email || "Sin nombre",
       email: email ?? "—",
-      role: row.role,
+      role: row.role === "admin" ? "admin" : "editor",
       active: row.active,
     };
   });

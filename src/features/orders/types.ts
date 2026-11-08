@@ -1,3 +1,7 @@
+import type {
+  ShippingMethod,
+  ShippingZone,
+} from "@/features/checkout/shipping";
 import type { OrderStatus } from "@/lib/constants";
 
 export type OrderStatusFilter = OrderStatus | "all";
@@ -44,6 +48,9 @@ export type AdminOrder = {
   customerEmail: string;
   customerPhone: string;
   customerCity: string;
+  customerAddress: string;
+  shippingMethod: ShippingMethod;
+  shippingZone: ShippingZone;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   items: OrderItem[];

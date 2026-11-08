@@ -1,11 +1,13 @@
 import {
   boolean,
   date,
+  index,
   integer,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { products } from "./catalog";
 
@@ -23,6 +25,12 @@ export const orderPaymentMethod = pgEnum("payment_method", [
   "cod",
 ]);
 
+export const shippingMethod = pgEnum("shipping_method", [
+  "delivery",
+  "pickup",
+  "courier",
+]);
+
 export const couponKind = pgEnum("coupon_kind", ["percent", "fixed"]);
 
 export const coupons = pgTable("coupons", {
@@ -30,6 +38,7 @@ export const coupons = pgTable("coupons", {
   kind: couponKind("kind").notNull(),
   value: integer("value").notNull(),
   uses: integer("uses").notNull().default(0),
+  maxUses: integer("max_uses").notNull().default(0),
   expiresAt: date("expires_at", { mode: "string" }).notNull(),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -37,27 +46,39 @@ export const coupons = pgTable("coupons", {
     .defaultNow(),
 });
 
-export const orders = pgTable("orders", {
-  id: text("id").primaryKey(),
-  number: integer("number").notNull().unique(),
-  customerName: text("customer_name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone").notNull(),
-  city: text("city").notNull(),
-  address: text("address").notNull().default(""),
-  status: orderStatus("status").notNull().default("pending"),
-  paymentMethod: orderPaymentMethod("payment_method").notNull(),
-  shippingCents: integer("shipping_cents").notNull().default(0),
-  subtotalCents: integer("subtotal_cents").notNull().default(0),
-  totalCents: integer("total_cents").notNull().default(0),
-  note: text("note").notNull().default(""),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const orders = pgTable(
+  "orders",
+  {
+    id: text("id").primaryKey(),
+    number: integer("number").notNull().unique(),
+    idempotencyKey: text("idempotency_key").unique(),
+    customerId: uuid("customer_id"),
+    customerName: text("customer_name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull(),
+    city: text("city").notNull(),
+    address: text("address").notNull().default(""),
+    shippingMethod: shippingMethod("shipping_method")
+      .notNull()
+      .default("delivery"),
+    shippingZone: text("shipping_zone").notNull().default("lima"),
+    status: orderStatus("status").notNull().default("pending"),
+    paymentMethod: orderPaymentMethod("payment_method").notNull(),
+    shippingCents: integer("shipping_cents").notNull().default(0),
+    subtotalCents: integer("subtotal_cents").notNull().default(0),
+    discountCents: integer("discount_cents").notNull().default(0),
+    totalCents: integer("total_cents").notNull().default(0),
+    couponCode: text("coupon_code"),
+    note: text("note").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("orders_customer_id_idx").on(table.customerId)],
+);
 
 export const orderItems = pgTable("order_items", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

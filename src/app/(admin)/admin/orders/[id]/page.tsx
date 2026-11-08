@@ -143,7 +143,14 @@ export default async function OrderDetailPage({
             <p className="text-muted-foreground">{order.customerEmail}</p>
             <p className="text-muted-foreground">{order.customerPhone}</p>
             <p className="text-muted-foreground mt-3 text-sm">
-              Entrega en {order.customerCity}
+              {order.shippingMethod === "pickup"
+                ? "Recojo en tienda"
+                : order.shippingMethod === "courier"
+                  ? "Courier a provincias"
+                  : `Delivery · ${order.shippingZone === "lima-outer" ? "Lima periférica" : "Lima Metropolitana"}`}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {order.customerAddress || order.customerCity}
             </p>
           </SectionCard>
 

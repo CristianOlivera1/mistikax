@@ -5,6 +5,7 @@ export type AdminCoupon = {
   kind: CouponKind;
   value: number;
   uses: number;
+  maxUses: number;
   expiresAt: string;
   active: boolean;
 };

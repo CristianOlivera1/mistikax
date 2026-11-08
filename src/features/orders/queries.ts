@@ -1,6 +1,16 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import { orderItems, orderStatusHistory, orders } from "@/db/schema";
 import { ORDER_STATUSES, STORE, type OrderStatus } from "@/lib/constants";
@@ -99,6 +109,9 @@ function buildAdminOrder(
     customerEmail: row.email,
     customerPhone: row.phone,
     customerCity: row.city,
+    customerAddress: row.address,
+    shippingMethod: row.shippingMethod,
+    shippingZone: row.shippingZone as AdminOrder["shippingZone"],
     status: row.status,
     paymentMethod: row.paymentMethod,
     items,
@@ -109,7 +122,9 @@ function buildAdminOrder(
   };
 }
 
-async function getItemsByOrder(orderIds: string[]): Promise<Map<string, OrderItem[]>> {
+async function getItemsByOrder(
+  orderIds: string[],
+): Promise<Map<string, OrderItem[]>> {
   const grouped = new Map<string, OrderItem[]>();
 
   if (orderIds.length === 0) return grouped;
@@ -185,7 +200,9 @@ export async function getOrderPage(filters: OrderFilters): Promise<OrderPage> {
   };
 }
 
-export async function getOrderById(id: string): Promise<AdminOrder | undefined> {
+export async function getOrderById(
+  id: string,
+): Promise<AdminOrder | undefined> {
   const [row] = await db
     .select()
     .from(orders)
@@ -205,7 +222,11 @@ export async function getOrderById(id: string): Promise<AdminOrder | undefined> 
     .where(eq(orderStatusHistory.orderId, id))
     .orderBy(asc(orderStatusHistory.createdAt));
 
-  return buildAdminOrder(row, items.map(toItem), historyRows.map(toHistoryEvent));
+  return buildAdminOrder(
+    row,
+    items.map(toItem),
+    historyRows.map(toHistoryEvent),
+  );
 }
 
 export async function getAllOrdersForPage(): Promise<AdminOrder[]> {

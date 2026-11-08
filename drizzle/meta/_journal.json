@@ -57,6 +57,27 @@
       "when": 1794160300000,
       "tag": "0007_security_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794160400000,
+      "tag": "0008_shipping_and_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794160500000,
+      "tag": "0009_orders_customer_coupons",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794160600000,
+      "tag": "0010_checkout_idempotency_and_stock_guards",
+      "breakpoints": true
     }
   ]
 }

@@ -64,7 +64,7 @@ export default async function CartPage() {
               freeShippingCents={cart.freeShippingCents}
             />
             <div className="pt-4">
-              <CartSummary totals={cart.totals}>
+              <CartSummary totals={cart.totals} estimate>
                 <Link
                   href={hasItems ? "/checkout" : "/catalog"}
                   className="bg-dark text-background hover:bg-premium hover:text-dark mt-4 block w-full px-6 py-4 text-center text-xs font-bold tracking-widest uppercase transition-colors"
@@ -82,6 +82,12 @@ export default async function CartPage() {
                 >
                   Consultar por WhatsApp
                 </a>
+                <Link
+                  href="/shipping"
+                  className="text-grey-dark hover:text-dark mt-3 block text-center text-[11px] tracking-widest uppercase underline underline-offset-4"
+                >
+                  Ver tarifario y envíos
+                </Link>
               </CartSummary>
             </div>
           </aside>

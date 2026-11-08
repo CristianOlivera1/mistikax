@@ -31,21 +31,46 @@ export const generalSettingsSchema = z.object({
 
 export type GeneralSettingsValues = z.infer<typeof generalSettingsSchema>;
 
-export const shippingSettingsSchema = z.object({
-  shippingCost: z
-    .number()
-    .min(0, "El costo no puede ser negativo.")
-    .max(1000, "El costo es demasiado alto."),
-  freeShippingFrom: z
-    .number()
-    .min(0, "El monto no puede ser negativo.")
-    .max(100000, "El monto es demasiado alto."),
-  leadTime: z
-    .string()
-    .trim()
-    .min(2, "Indica un tiempo de preparación.")
-    .max(80, "El tiempo no debe superar los 80 caracteres."),
-});
+export const shippingSettingsSchema = z
+  .object({
+    deliveryLima: z
+      .number()
+      .min(0, "La tarifa no puede ser negativa.")
+      .max(1000, "La tarifa es demasiado alta."),
+    deliveryLimaOuter: z
+      .number()
+      .min(0, "La tarifa no puede ser negativa.")
+      .max(1000, "La tarifa es demasiado alta."),
+    courierProvinces: z
+      .number()
+      .min(0, "La tarifa no puede ser negativa.")
+      .max(1000, "La tarifa es demasiado alta."),
+    freeShippingFrom: z
+      .number()
+      .min(0, "El monto no puede ser negativo.")
+      .max(100000, "El monto es demasiado alto."),
+    leadTime: z
+      .string()
+      .trim()
+      .min(2, "Indica un tiempo de preparación.")
+      .max(80, "El tiempo no debe superar los 80 caracteres."),
+    deliveryEnabled: z.boolean(),
+    pickupEnabled: z.boolean(),
+    courierEnabled: z.boolean(),
+  })
+  .superRefine((values, context) => {
+    if (
+      !values.deliveryEnabled &&
+      !values.pickupEnabled &&
+      !values.courierEnabled
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["deliveryEnabled"],
+        message: "Habilita al menos un método de entrega.",
+      });
+    }
+  });
 
 export type ShippingSettingsValues = z.infer<typeof shippingSettingsSchema>;
 

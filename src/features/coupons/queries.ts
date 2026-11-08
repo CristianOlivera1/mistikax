@@ -16,6 +16,7 @@ export async function getCoupons(): Promise<AdminCoupon[]> {
     kind: row.kind,
     value: row.value,
     uses: row.uses,
+    maxUses: row.maxUses,
     expiresAt: row.expiresAt,
     active: row.active,
   }));

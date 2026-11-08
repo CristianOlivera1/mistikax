@@ -1,8 +1,15 @@
+import { getAdminSession } from "@/features/auth/queries";
 import { getAllOrdersForPage } from "@/features/orders/queries";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const session = await getAdminSession();
+
+  if (!session || session.role !== "admin") {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const orders = await getAllOrdersForPage();
   const payload = {
     store: "mistikax",
@@ -18,7 +25,10 @@ export async function GET() {
         email: order.customerEmail,
         phone: order.customerPhone,
         city: order.customerCity,
+        address: order.customerAddress,
       },
+      shippingMethod: order.shippingMethod,
+      shippingZone: order.shippingZone,
       items: order.items.map((item) => ({
         productId: item.productId,
         productName: item.productName,

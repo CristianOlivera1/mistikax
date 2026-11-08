@@ -11,10 +11,8 @@ import {
   type CartLine,
 } from "./schema";
 
-const DEVELOPMENT_SECRET = "mistikax-development-cart-secret-change-me-please";
-
 function getSecret(): string {
-  return serverEnv.CART_COOKIE_SECRET ?? DEVELOPMENT_SECRET;
+  return serverEnv.CART_COOKIE_SECRET;
 }
 
 function sign(payload: string): string {

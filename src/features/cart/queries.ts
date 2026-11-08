@@ -2,6 +2,7 @@ import "server-only";
 
 import { getSiteSettings } from "@/features/settings/queries";
 import { getStoreProductsByIds } from "@/features/catalog/store-queries";
+import { getShippingFromCents } from "@/features/checkout/shipping";
 import { readCartCookie } from "./cookie";
 import { cartLineKey, type CartLine } from "./schema";
 import { computeCartTotals, type CartTotals } from "./totals";
@@ -23,17 +24,21 @@ export type CartLineView = {
 export type CartView = {
   lines: CartLineView[];
   totals: CartTotals;
-  shippingCents: number;
+  shippingFromCents: number;
   freeShippingCents: number;
 };
 
-export async function getCartLines(rawLines: CartLine[]): Promise<CartLineView[]> {
+export async function getCartLines(
+  rawLines: CartLine[],
+): Promise<CartLineView[]> {
   if (rawLines.length === 0) return [];
 
   const productsList = await getStoreProductsByIds(
     rawLines.map((line) => line.productId),
   );
-  const productById = new Map(productsList.map((product) => [product.id, product]));
+  const productById = new Map(
+    productsList.map((product) => [product.id, product]),
+  );
 
   return rawLines.map((line) => {
     const product = productById.get(line.productId);
@@ -51,24 +56,28 @@ export async function getCartLines(rawLines: CartLine[]): Promise<CartLineView[]
       colorName: color?.name ?? "",
       qty: line.qty,
       stock,
-      available: Boolean(product) && stock >= line.qty,
+      available: Boolean(product) && Boolean(color) && stock >= line.qty,
     };
   });
 }
 
 export async function getCartView(): Promise<CartView> {
-  const [lines, settings] = await Promise.all([readCartCookie(), getSiteSettings()]);
+  const [lines, settings] = await Promise.all([
+    readCartCookie(),
+    getSiteSettings(),
+  ]);
   const views = await getCartLines(lines);
   const purchasable = views.filter((line) => line.available);
+  const fromCents = getShippingFromCents(settings);
   const totals = computeCartTotals(purchasable, {
-    shippingCents: settings.shippingCents,
+    shippingCents: fromCents,
     freeShippingCents: settings.freeShippingCents,
   });
 
   return {
     lines: views,
     totals,
-    shippingCents: settings.shippingCents,
+    shippingFromCents: fromCents,
     freeShippingCents: settings.freeShippingCents,
   };
 }

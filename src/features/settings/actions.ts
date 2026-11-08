@@ -5,7 +5,7 @@ import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { profiles, siteSettings } from "@/db/schema";
-import { getAdminSession } from "@/features/auth/queries";
+import { getAdminSession, requireRole } from "@/features/auth/queries";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   appearanceSettingsSchema,
@@ -19,8 +19,7 @@ import {
 } from "./schema";
 
 type SettingsActionResult =
-  | { status: "success" }
-  | { status: "error"; message: string };
+  { status: "success" } | { status: "error"; message: string };
 
 const rowId = eq(siteSettings.id, 1);
 
@@ -44,6 +43,12 @@ function revalidateSettings() {
 export async function updateGeneralSettingsAction(
   rawValues: GeneralSettingsValues,
 ): Promise<SettingsActionResult> {
+  try {
+    await requireRole("admin");
+  } catch {
+    return { status: "error", message: "No autorizado." };
+  }
+
   const parsed = generalSettingsSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -68,7 +73,10 @@ export async function updateGeneralSettingsAction(
       .returning({ id: siteSettings.id });
 
     if (rows.length === 0) {
-      return { status: "error", message: "La configuración no está inicializada." };
+      return {
+        status: "error",
+        message: "La configuración no está inicializada.",
+      };
     }
   } catch {
     return { status: "error", message: "No se pudo guardar la configuración." };
@@ -82,6 +90,12 @@ export async function updateGeneralSettingsAction(
 export async function updateShippingSettingsAction(
   rawValues: ShippingSettingsValues,
 ): Promise<SettingsActionResult> {
+  try {
+    await requireRole("admin");
+  } catch {
+    return { status: "error", message: "No autorizado." };
+  }
+
   const parsed = shippingSettingsSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -94,16 +108,25 @@ export async function updateShippingSettingsAction(
     const rows = await db
       .update(siteSettings)
       .set({
-        shippingCents: Math.round(data.shippingCost * 100),
+        shippingCents: Math.round(data.deliveryLima * 100),
+        shippingLimaCents: Math.round(data.deliveryLima * 100),
+        shippingLimaOuterCents: Math.round(data.deliveryLimaOuter * 100),
+        shippingProvincesCents: Math.round(data.courierProvinces * 100),
         freeShippingThresholdCents: Math.round(data.freeShippingFrom * 100),
         leadTime: data.leadTime,
+        deliveryEnabled: data.deliveryEnabled,
+        pickupEnabled: data.pickupEnabled,
+        courierEnabled: data.courierEnabled,
         updatedAt: new Date(),
       })
       .where(rowId)
       .returning({ id: siteSettings.id });
 
     if (rows.length === 0) {
-      return { status: "error", message: "La configuración no está inicializada." };
+      return {
+        status: "error",
+        message: "La configuración no está inicializada.",
+      };
     }
   } catch {
     return { status: "error", message: "No se pudo guardar el envío." };
@@ -117,6 +140,12 @@ export async function updateShippingSettingsAction(
 export async function updatePaymentSettingsAction(
   rawValues: PaymentSettingsValues,
 ): Promise<SettingsActionResult> {
+  try {
+    await requireRole("admin");
+  } catch {
+    return { status: "error", message: "No autorizado." };
+  }
+
   const parsed = paymentSettingsSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -140,7 +169,10 @@ export async function updatePaymentSettingsAction(
       .returning({ id: siteSettings.id });
 
     if (rows.length === 0) {
-      return { status: "error", message: "La configuración no está inicializada." };
+      return {
+        status: "error",
+        message: "La configuración no está inicializada.",
+      };
     }
   } catch {
     return { status: "error", message: "No se pudo guardar los pagos." };
@@ -154,6 +186,12 @@ export async function updatePaymentSettingsAction(
 export async function updateAppearanceSettingsAction(
   rawValues: AppearanceSettingsValues,
 ): Promise<SettingsActionResult> {
+  try {
+    await requireRole("admin");
+  } catch {
+    return { status: "error", message: "No autorizado." };
+  }
+
   const parsed = appearanceSettingsSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -174,7 +212,10 @@ export async function updateAppearanceSettingsAction(
       .returning({ id: siteSettings.id });
 
     if (rows.length === 0) {
-      return { status: "error", message: "La configuración no está inicializada." };
+      return {
+        status: "error",
+        message: "La configuración no está inicializada.",
+      };
     }
   } catch {
     return { status: "error", message: "No se pudo guardar la apariencia." };
@@ -220,11 +261,15 @@ export async function updateTeamMemberAction(rawValues: {
     .where(eq(profiles.id, id))
     .limit(1);
 
-  if (!target) {
+  if (!target || target.role === "customer") {
     return { status: "error", message: "El miembro no existe." };
   }
 
-  if (target.role === "admin" && target.active && (!active || role !== "admin")) {
+  if (
+    target.role === "admin" &&
+    target.active &&
+    (!active || role !== "admin")
+  ) {
     const [admins] = await db
       .select({ total: count() })
       .from(profiles)

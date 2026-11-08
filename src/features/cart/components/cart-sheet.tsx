@@ -63,7 +63,7 @@ export function CartSheet({ lines, totals, freeShippingCents }: CartSheetProps) 
               subtotalCents={totals.subtotalCents}
               freeShippingCents={freeShippingCents}
             />
-            <CartSummary totals={totals} />
+            <CartSummary totals={totals} estimate />
             <Link
               href="/checkout"
               onClick={() => setOpen(false)}

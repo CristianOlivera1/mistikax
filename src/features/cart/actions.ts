@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getStoreProduct } from "@/features/catalog/store-queries";
-import { cartLineSchema } from "./schema";
+import { CART_MAX_QUANTITY, cartLineSchema } from "./schema";
 import { readCartCookie, writeCartCookie } from "./cookie";
 import type { CartLine } from "./schema";
 
@@ -37,6 +37,13 @@ export async function addToCartAction(input: {
   }
 
   const stock = product.stock[parsed.data.size] ?? 0;
+  const color = product.colors.find(
+    (productColor) => productColor.id === parsed.data.colorId,
+  );
+
+  if (!color) {
+    return { status: "error", message: "Elige un color válido para este producto." };
+  }
 
   if (stock <= 0) {
     return { status: "error", message: "Esa talla está agotada." };
@@ -49,6 +56,13 @@ export async function addToCartAction(input: {
     (line) => `${line.productId}|${line.size}|${line.colorId}` === key,
   );
   const nextQty = (existing?.qty ?? 0) + requested;
+
+  if (nextQty > CART_MAX_QUANTITY) {
+    return {
+      status: "error",
+      message: `Puedes llevar hasta ${CART_MAX_QUANTITY} unidades por talla.`,
+    };
+  }
 
   if (nextQty > stock) {
     return {
@@ -71,7 +85,7 @@ export async function updateCartQuantityAction(
   key: string,
   quantity: number,
 ): Promise<CartActionResult> {
-  if (!Number.isInteger(quantity) || quantity < 0) {
+  if (!Number.isInteger(quantity) || quantity < 0 || quantity > CART_MAX_QUANTITY) {
     return { status: "error", message: "Cantidad no válida." };
   }
 

@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { coupons } from "@/db/schema";
+import { requireRole } from "@/features/auth/queries";
 import { couponFormSchema, type CouponFormValues } from "./schema";
 
 type CouponActionResult =
@@ -26,6 +27,7 @@ function databaseValue(values: CouponFormValues): {
   value: number;
   expiresAt: string;
   active: boolean;
+  maxUses: number;
 } {
   return {
     kind: values.kind,
@@ -35,6 +37,7 @@ function databaseValue(values: CouponFormValues): {
         : Math.round(values.value * 100),
     expiresAt: values.expiresAt,
     active: values.active,
+    maxUses: values.maxUses ?? 0,
   };
 }
 
@@ -45,6 +48,8 @@ function revalidateCoupons() {
 export async function createCouponAction(
   rawValues: CouponFormValues,
 ): Promise<CouponActionResult> {
+  await requireRole("admin");
+
   const parsed = couponFormSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -76,6 +81,8 @@ export async function updateCouponAction(
   rawCode: string,
   rawValues: CouponFormValues,
 ): Promise<CouponActionResult> {
+  await requireRole("admin");
+
   const parsedCode = couponCodeSchema.safeParse(rawCode);
   const parsed = couponFormSchema.safeParse(rawValues);
 
@@ -108,6 +115,8 @@ export async function updateCouponAction(
 export async function deleteCouponAction(
   rawCode: string,
 ): Promise<CouponActionResult> {
+  await requireRole("admin");
+
   const parsed = couponCodeSchema.safeParse(rawCode);
 
   if (!parsed.success) {
