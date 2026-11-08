@@ -45,11 +45,37 @@ export const productFormSchema = z.object({
           .number()
           .int("Usa una cantidad entera.")
           .min(0, "El stock no puede ser negativo."),
+        originalQuantity: z.number().int().min(0),
       }),
     )
     .min(1, "La categoría debe tener al menos una talla."),
   images: z.array(z.string().min(1)).min(1, "Añade al menos una imagen."),
-});
+})
+  .superRefine((values, context) => {
+    if (new Set(values.stock.map((item) => item.size)).size !== values.stock.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["stock"],
+        message: "Hay tallas duplicadas en el inventario.",
+      });
+    }
+
+    if (new Set(values.colorIds).size !== values.colorIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["colorIds"],
+        message: "Hay colores duplicados.",
+      });
+    }
+
+    if (new Set(values.images).size !== values.images.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["images"],
+        message: "Hay imágenes duplicadas.",
+      });
+    }
+  });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
 

@@ -102,15 +102,20 @@ export function parseStoreFilters(
   const maxValue = Number.parseInt(first(params.max), 10);
 
   return {
-    category: first(params.category).trim(),
+    category: first(params.category).trim().slice(0, 64),
     age: isAgeGroup(first(params.age)) ? (first(params.age) as AgeGroup) : "",
-    size: first(params.size).trim(),
+    size: first(params.size).trim().slice(0, 16),
     maxCents:
-      Number.isFinite(maxValue) && maxValue > 0 ? maxValue * 100 : null,
+      Number.isFinite(maxValue) && maxValue > 0
+        ? Math.min(maxValue, 1_000_000) * 100
+        : null,
     sale: first(params.sale) === "1",
-    query: first(params.q).trim(),
+    query: first(params.q).trim().slice(0, 80),
     sort: isSort(first(params.sort)) ? (first(params.sort) as StoreSort) : "featured",
-    page: Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 1,
+    page:
+      Number.isFinite(pageValue) && pageValue > 0
+        ? Math.min(pageValue, 500)
+        : 1,
   };
 }
 
@@ -210,19 +215,21 @@ async function loadStoreProductsData(): Promise<StoreProduct[]> {
 
   const ids = rows.map((row) => row.id);
 
-  const stockRows = await db
-    .select()
-    .from(productStock)
-    .where(inArray(productStock.productId, ids));
-  const colorRows = await db
-    .select()
-    .from(productColors)
-    .where(inArray(productColors.productId, ids));
-  const colorList = await db.select().from(colors);
-  const imageRows = await db
-    .select()
-    .from(productImages)
-    .where(inArray(productImages.productId, ids));
+  const [stockRows, colorRows, colorList, imageRows] = await Promise.all([
+    db
+      .select()
+      .from(productStock)
+      .where(inArray(productStock.productId, ids)),
+    db
+      .select()
+      .from(productColors)
+      .where(inArray(productColors.productId, ids)),
+    db.select().from(colors),
+    db
+      .select()
+      .from(productImages)
+      .where(inArray(productImages.productId, ids)),
+  ]);
 
   const stockByProduct = new Map<string, Record<string, number>>();
   for (const row of stockRows) {
@@ -365,11 +372,13 @@ export async function getStoreTopSellingByAge(): Promise<
 export async function getStoreCategoryShowcase(
   limit = 7,
 ): Promise<StoreCategoryCard[]> {
-  const all = await loadPublishableProducts();
-  const categoryRows = await db
-    .select({ id: categories.id, name: categories.name })
-    .from(categories)
-    .orderBy(asc(categories.createdAt), asc(categories.id));
+  const [all, categoryRows] = await Promise.all([
+    loadPublishableProducts(),
+    db
+      .select({ id: categories.id, name: categories.name })
+      .from(categories)
+      .orderBy(asc(categories.createdAt), asc(categories.id)),
+  ]);
 
   return categoryRows
     .map((category) => {
@@ -413,14 +422,15 @@ function pickBestSellers(all: StoreProduct[], limit: number): StoreProduct[] {
 }
 
 export async function getStoreHomeData(): Promise<StoreHomeData> {
-  const all = await loadPublishableProducts();
+  const [all, categoryRows] = await Promise.all([
+    loadPublishableProducts(),
+    getStoreCategoryNames(),
+  ]);
   const byAge: Partial<Record<AgeGroup, StoreProduct>> = {};
 
   for (const age of STORE_AGE_ORDER) {
     byAge[age] = all.find((product) => product.ageGroup === age);
   }
-
-  const categoryRows = await getStoreCategoryNames();
 
   const categoriesList = categoryRows
     .map((category) => {

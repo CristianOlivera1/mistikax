@@ -58,7 +58,10 @@ export function parseProductFilters(
 
   return {
     query: first(params.q).trim(),
-    categoryId: first(params.category).trim(),
+    categoryId:
+      first(params.category).trim() === "__all__"
+        ? ""
+        : first(params.category).trim(),
     ageGroup: isAgeGroup(first(params.age)) ? (first(params.age) as AgeGroup) : "",
     status: isProductStatus(first(params.status))
       ? (first(params.status) as ProductStatus)
@@ -126,18 +129,20 @@ async function loadProducts(where?: SQL): Promise<CatalogProduct[]> {
   if (rows.length === 0) return [];
 
   const ids = rows.map((row) => row.id);
-  const stockRows = await db
-    .select()
-    .from(productStock)
-    .where(inArray(productStock.productId, ids));
-  const colorRows = await db
-    .select()
-    .from(productColors)
-    .where(inArray(productColors.productId, ids));
-  const imageRows = await db
-    .select()
-    .from(productImages)
-    .where(inArray(productImages.productId, ids));
+  const [stockRows, colorRows, imageRows] = await Promise.all([
+    db
+      .select()
+      .from(productStock)
+      .where(inArray(productStock.productId, ids)),
+    db
+      .select()
+      .from(productColors)
+      .where(inArray(productColors.productId, ids)),
+    db
+      .select()
+      .from(productImages)
+      .where(inArray(productImages.productId, ids)),
+  ]);
 
   return rows.map((row) =>
     toCatalogProduct(row, stockRows, colorRows, imageRows),
@@ -254,8 +259,10 @@ export async function getInventoryRows(
   filters: InventoryFilters,
 ): Promise<InventoryRow[]> {
   const query = filters.query.toLowerCase();
-  const allProducts = await loadProducts(ne(products.status, "archived"));
-  const categoryList = await getCategories();
+  const [allProducts, categoryList] = await Promise.all([
+    loadProducts(ne(products.status, "archived")),
+    getCategories(),
+  ]);
   const categoryById = new Map(categoryList.map((category) => [category.id, category]));
 
   return allProducts
