@@ -146,33 +146,36 @@ export function findNavItem(pathname: string): NavItem | undefined {
 export type StoreNavItem = {
   label: string;
   href: string;
+  mobileOnly?: boolean;
 };
 
-export const STORE_NAV: StoreNavItem[] = [
+const ALL_STORE_NAV: StoreNavItem[] = [
   { label: "Inicio", href: "/" },
   { label: "Niños", href: "/catalog?age=kids" },
   { label: "Jóvenes", href: "/catalog?age=teens" },
   { label: "Adultos", href: "/catalog?age=adults" },
   { label: "Polos", href: "/catalog?category=polos" },
+  { label: "Camisas", href: "/catalog?category=camisas", mobileOnly: true },
+  {
+    label: "Pantalones",
+    href: "/catalog?category=pantalones",
+    mobileOnly: true,
+  },
+  { label: "Casacas", href: "/catalog?category=casacas", mobileOnly: true },
   { label: "Calzado", href: "/catalog?category=calzado" },
   { label: "Gorras", href: "/catalog?category=gorras" },
-  { label: "Ofertas", href: "/catalog?sale=1" },
-  { label: "Contacto", href: "/pages/contacto" },
-];
-
-export const STORE_MOBILE_NAV: StoreNavItem[] = [
-  { label: "Inicio", href: "/" },
-  { label: "Niños", href: "/catalog?age=kids" },
-  { label: "Jóvenes", href: "/catalog?age=teens" },
-  { label: "Adultos", href: "/catalog?age=adults" },
-  { label: "Polos", href: "/catalog?category=polos" },
-  { label: "Camisas", href: "/catalog?category=camisas" },
-  { label: "Pantalones", href: "/catalog?category=pantalones" },
-  { label: "Casacas", href: "/catalog?category=casacas" },
-  { label: "Calzado", href: "/catalog?category=calzado" },
-  { label: "Gorras", href: "/catalog?category=gorras" },
-  { label: "Accesorios", href: "/catalog?category=accesorios" },
+  {
+    label: "Accesorios",
+    href: "/catalog?category=accesorios",
+    mobileOnly: true,
+  },
   { label: "Ofertas", href: "/catalog?sale=1" },
   { label: "Guía de tallas", href: "/size-guide" },
-  { label: "Contacto", href: "/pages/contacto" },
+  { label: "Contacto", href: "/pages/contact" },
 ];
+
+export const STORE_NAV: StoreNavItem[] = ALL_STORE_NAV.filter(
+  (item) => !item.mobileOnly,
+);
+
+export const STORE_MOBILE_NAV: StoreNavItem[] = ALL_STORE_NAV;

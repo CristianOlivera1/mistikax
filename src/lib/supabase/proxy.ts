@@ -55,8 +55,15 @@ export async function refreshSession(request: NextRequest) {
     return redirectTo("/login");
   }
 
-  if (user && pathname === "/login") {
-    return redirectTo("/admin");
+  const isCustomerAuthPage =
+    pathname === "/account/sign-in" || pathname === "/account/sign-up";
+
+  if (user && isCustomerAuthPage) {
+    return redirectTo("/account");
+  }
+
+  if (!user && pathname.startsWith("/account") && !isCustomerAuthPage) {
+    return redirectTo("/account/sign-in");
   }
 
   return response;

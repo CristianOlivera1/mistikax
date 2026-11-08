@@ -7,12 +7,16 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const profileRole = pgEnum("profile_role", ["admin", "editor"]);
+export const profileRole = pgEnum("profile_role", [
+  "admin",
+  "editor",
+  "customer",
+]);
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
   fullName: text("full_name").notNull().default(""),
-  role: profileRole("role").notNull().default("editor"),
+  role: profileRole("role").notNull().default("customer"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

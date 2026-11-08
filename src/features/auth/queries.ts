@@ -3,14 +3,15 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
-import { profiles, type ProfileRole } from "@/db/schema";
+import { profiles } from "@/db/schema";
+import type { AdminRole } from "@/lib/nav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AdminSession = {
   id: string;
   email: string;
   fullName: string;
-  role: ProfileRole;
+  role: AdminRole;
 };
 
 export const getAdminSession = cache(
@@ -28,7 +29,9 @@ export const getAdminSession = cache(
       .where(eq(profiles.id, user.id))
       .limit(1);
 
-    if (!profile || !profile.active) return null;
+    if (!profile || !profile.active || profile.role === "customer") {
+      return null;
+    }
 
     return {
       id: user.id,
@@ -38,3 +41,17 @@ export const getAdminSession = cache(
     };
   },
 );
+
+export async function requireAdminSession(): Promise<AdminSession> {
+  const session = await getAdminSession();
+  if (!session) throw new Error("NOT_AUTHENTICATED");
+  return session;
+}
+
+export async function requireRole(
+  ...allowed: AdminRole[]
+): Promise<AdminSession> {
+  const session = await requireAdminSession();
+  if (!allowed.includes(session.role)) throw new Error("FORBIDDEN");
+  return session;
+}

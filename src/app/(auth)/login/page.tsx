@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Icon } from "@/components/icons/icon";
 import { BrandMark } from "@/components/shared/brand-mark";
 import { LoginForm } from "@/features/auth/components/login-form";
+import { getAdminSession } from "@/features/auth/queries";
 
 export const metadata: Metadata = {
   title: "Iniciar sesión",
@@ -26,7 +28,11 @@ const features = [
   },
 ];
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getAdminSession();
+
+  if (session) redirect("/admin");
+
   return (
     <div className="grid min-h-svh lg:grid-cols-[1.05fr_1fr]">
       <aside className="relative hidden min-h-svh flex-col justify-between overflow-hidden bg-foreground p-10 text-background lg:flex xl:p-14">

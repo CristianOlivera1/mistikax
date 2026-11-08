@@ -3,11 +3,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Icon } from "@/components/icons/icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loginSchema, type LoginValues } from "../schema";
@@ -23,7 +22,6 @@ export function LoginForm() {
     defaultValues: {
       email: "",
       password: "",
-      remember: true,
     },
   });
   const { errors } = form.formState;
@@ -127,28 +125,12 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Controller
-            control={form.control}
-            name="remember"
-            render={({ field }) => (
-              <Checkbox
-                id="remember"
-                checked={field.value}
-                onCheckedChange={(checked) => field.onChange(checked === true)}
-              />
-            )}
-          />
-          <Label htmlFor="remember" className="text-[13px] font-normal text-muted-foreground">
-            Recordarme
-          </Label>
-        </div>
+      <div className="flex items-center justify-end">
         <a
-          href="mailto:hola@mistikax.com?subject=Acceso%20al%20panel%20Mistikax"
+          href="mailto:hola@mistikax.com?subject=Ayuda%20para%20entrar%20al%20panel%20Mistikax"
           className="text-[13px] font-medium underline-offset-4 hover:underline"
         >
-          ¿Olvidaste tu contraseña?
+          ¿Necesitas ayuda para entrar?
         </a>
       </div>
 
