@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -23,22 +23,25 @@ export function OrderStatusActions({
   status,
 }: OrderStatusActionsProps) {
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const nextStatus = NEXT_STATUS[status];
   const canCancel = status === "pending" || status === "paid";
 
   if (!nextStatus && !canCancel) return null;
 
-  async function transition(next: OrderStatus) {
-    const result = await transitionOrderStatusAction(orderId, next);
+  function transition(next: OrderStatus) {
+    startTransition(async () => {
+      const result = await transitionOrderStatusAction(orderId, next);
 
-    if (result.status === "error") {
-      toast.error(result.message);
-      return;
-    }
+      if (result.status === "error") {
+        toast.error(result.message);
+        return;
+      }
 
-    toast.success(`Pedido ${ORDER_STATUSES[next].toLowerCase()}.`);
+      toast.success(`Pedido ${ORDER_STATUSES[next].toLowerCase()}.`);
 
-    if (next === "cancelled") setCancelOpen(false);
+      if (next === "cancelled") setCancelOpen(false);
+    });
   }
 
   return (
@@ -47,14 +50,21 @@ export function OrderStatusActions({
         <Button
           type="button"
           variant="destructive"
+          disabled={isPending}
           onClick={() => setCancelOpen(true)}
         >
           Cancelar
         </Button>
       ) : null}
       {nextStatus ? (
-        <Button type="button" onClick={() => void transition(nextStatus)}>
-          Marcar como {ORDER_STATUSES[nextStatus].toLowerCase()}
+        <Button
+          type="button"
+          disabled={isPending}
+          onClick={() => transition(nextStatus)}
+        >
+          {isPending
+            ? "Guardando..."
+            : `Marcar como ${ORDER_STATUSES[nextStatus].toLowerCase()}`}
         </Button>
       ) : null}
       <ConfirmDialog
@@ -64,6 +74,7 @@ export function OrderStatusActions({
         description="El pedido dejará de facturarse y el stock de sus productos se restaurará una sola vez."
         confirmLabel="Cancelar pedido"
         tone="danger"
+        confirmDisabled={isPending}
         onConfirm={() => transition("cancelled")}
       />
     </>
