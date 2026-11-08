@@ -4,10 +4,16 @@ import { buildWhatsAppLink } from "@/lib/whatsapp";
 
 type StoreFooterProps = {
   categories: Array<{ id: string; name: string }>;
+  pages: Array<{ id: string; title: string }>;
   settings: SiteSettings;
 };
 
-export function StoreFooter({ categories, settings }: StoreFooterProps) {
+export function StoreFooter({ categories, pages, settings }: StoreFooterProps) {
+  const legalPages = pages.filter(
+    (page) =>
+      page.id === "privacy" || page.id === "terms-and-conditions",
+  );
+
   return (
     <footer className="bg-clay border-t border-white/10 pt-20 pb-10 text-white">
       <div className="mx-auto max-w-[1400px] px-6">
@@ -47,30 +53,32 @@ export function StoreFooter({ categories, settings }: StoreFooterProps) {
             </h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
+                <Link className="hover:text-white/70" href="/account">
+                  Mi cuenta
+                </Link>
+              </li>
+              <li>
                 <Link className="hover:text-white/70" href="/size-guide">
                   Guía de tallas
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-white/70" href="/pages/envios">
-                  Envíos
+                <Link className="hover:text-white/70" href="/shipping">
+                  Envíos y tarifas
                 </Link>
               </li>
-              <li>
-                <Link className="hover:text-white/70" href="/pages/cambios">
-                  Cambios y devoluciones
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-white/70" href="/pages/nosotros">
-                  Nosotros
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-white/70" href="/pages/contacto">
-                  Contacto
-                </Link>
-              </li>
+              {pages
+                .filter((page) => page.id !== "shipping")
+                .map((page) => (
+                  <li key={page.id}>
+                    <Link
+                      className="hover:text-white/70"
+                      href={`/pages/${page.id}`}
+                    >
+                      {page.title}
+                    </Link>
+                  </li>
+                ))}
             </ul>
           </div>
           <div>
@@ -115,20 +123,19 @@ export function StoreFooter({ categories, settings }: StoreFooterProps) {
             © {new Date().getFullYear()} Mistikax Tienda de Ropa. Todos los
             derechos reservados.
           </p>
-          <div className="flex gap-6">
-            <Link
-              href="/pages/privacidad"
-              className="hover:text-white"
-            >
-              Política de privacidad
-            </Link>
-            <Link
-              href="/pages/terminos-del-servicio"
-              className="hover:text-white"
-            >
-              Términos del servicio
-            </Link>
-          </div>
+          {legalPages.length > 0 ? (
+            <div className="flex gap-6">
+              {legalPages.map((page) => (
+                <Link
+                  key={page.id}
+                  href={`/pages/${page.id}`}
+                  className="hover:text-white"
+                >
+                  {page.title}
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </footer>

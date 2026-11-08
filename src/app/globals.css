@@ -48,6 +48,7 @@
   --color-grey-dark: var(--grey-dark);
   --color-success: var(--success);
   --color-error: var(--error);
+  --color-dark: var(--foreground);
   --font-sans: var(--font-app-sans);
   --font-mono: var(--font-app-mono);
   --font-heading: var(--font-app-heading);
@@ -191,5 +192,9 @@
 
   ::selection {
     background: color-mix(in oklab, var(--foreground) 16%, transparent);
+  }
+
+  button{
+    cursor: pointer;
   }
 }

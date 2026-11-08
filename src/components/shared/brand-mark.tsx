@@ -13,6 +13,7 @@ export function BrandMark({ className, framed = false }: BrandMarkProps) {
       alt="Mistikax"
       width={160}
       height={40}
+      loading="eager"
       className={framed ? "h-7 w-auto" : "h-8 w-auto"}
     />
   );

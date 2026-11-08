@@ -7,7 +7,7 @@ import { StoreHeaderActions } from "./store-header-actions";
 
 type StoreHeaderProps = {
   nav: readonly StoreNavItem[];
-  searchTop: string;
+  customer: { fullName: string; email: string } | null;
   cart: {
     lines: CartLineView[];
     totals: CartTotals;
@@ -15,9 +15,13 @@ type StoreHeaderProps = {
   };
 };
 
-export function StoreHeader({ nav, searchTop, cart }: StoreHeaderProps) {
+export function StoreHeader({
+  nav,
+  customer,
+  cart,
+}: StoreHeaderProps) {
   return (
-    <header className="bg-offwhite/95 border-grey-light w-full border-b backdrop-blur-md">
+    <header className="bg-offwhite/95 border-grey-light relative w-full border-b backdrop-blur-md">
       <div className="mx-auto flex h-20 max-w-[1400px] items-center justify-between px-6">
         <Link
           href="/"
@@ -40,7 +44,10 @@ export function StoreHeader({ nav, searchTop, cart }: StoreHeaderProps) {
             </Link>
           ))}
         </nav>
-        <StoreHeaderActions searchTop={searchTop} cart={cart} />
+        <StoreHeaderActions
+          customer={customer}
+          cart={cart}
+        />
       </div>
     </header>
   );

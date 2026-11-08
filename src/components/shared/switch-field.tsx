@@ -8,6 +8,7 @@ type SwitchFieldProps = {
   label: string;
   description?: string;
   checked: boolean;
+  disabled?: boolean;
   onCheckedChange: (checked: boolean) => void;
 };
 
@@ -16,6 +17,7 @@ export function SwitchField({
   label,
   description,
   checked,
+  disabled,
   onCheckedChange,
 }: SwitchFieldProps) {
   return (
@@ -29,6 +31,7 @@ export function SwitchField({
       <Switch
         id={id}
         checked={checked}
+        disabled={disabled}
         onCheckedChange={onCheckedChange}
         className="mt-0.5"
       />
