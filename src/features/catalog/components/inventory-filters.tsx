@@ -3,7 +3,13 @@ import { FilterBar } from "@/components/admin/filter-bar";
 import { Icon } from "@/components/icons/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { InventoryFilters } from "../types";
 
 type InventoryFiltersProps = {
@@ -38,16 +44,19 @@ export function InventoryFilters({ filters }: InventoryFiltersProps) {
           />
         </div>
 
-        <NativeSelect
-          name="status"
-          defaultValue={filters.status}
-          aria-label="Filtrar por estado del stock"
-          className="w-auto"
-        >
-          <option value="all">Todo el stock</option>
-          <option value="low">Stock bajo</option>
-          <option value="out">Agotados</option>
-        </NativeSelect>
+        <Select name="status" defaultValue={filters.status}>
+          <SelectTrigger
+            aria-label="Filtrar por estado del stock"
+            className="w-auto"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="start" position="popper">
+            <SelectItem value="all">Todo el stock</SelectItem>
+            <SelectItem value="low">Stock bajo</SelectItem>
+            <SelectItem value="out">Agotados</SelectItem>
+          </SelectContent>
+        </Select>
 
         <Button type="submit" variant="secondary" size="sm">
           Filtrar

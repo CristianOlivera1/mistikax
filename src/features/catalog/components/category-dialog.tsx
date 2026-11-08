@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useTransition } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { FormField } from "@/components/shared/form-field";
@@ -18,7 +18,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   createCategoryAction,
   updateCategoryAction,
@@ -124,17 +130,33 @@ export function CategoryDialog({ category }: CategoryDialogProps) {
             htmlFor="category-size-type"
             error={errors.sizeType?.message}
           >
-            <NativeSelect
-              id="category-size-type"
-              aria-invalid={Boolean(errors.sizeType)}
-              {...form.register("sizeType")}
-            >
-              {Object.entries(SIZE_TYPES).map(([value, option]) => (
-                <option key={value} value={value}>
-                  {option.label}
-                </option>
-              ))}
-            </NativeSelect>
+            <Controller
+              control={form.control}
+              name="sizeType"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  name={field.name}
+                >
+                  <SelectTrigger
+                    id="category-size-type"
+                    aria-invalid={Boolean(errors.sizeType)}
+                    onBlur={field.onBlur}
+                    className="w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SIZE_TYPES).map(([value, option]) => (
+                      <SelectItem key={value} value={value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </FormField>
 
           <p className="text-muted-foreground text-xs">

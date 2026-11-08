@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { FormField } from "@/components/shared/form-field";
@@ -11,7 +11,13 @@ import { SectionCard } from "@/components/shared/section-card";
 import { SwitchField } from "@/components/shared/switch-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { updateHomeContentAction } from "../actions";
@@ -179,17 +185,33 @@ export function HomeContentForm({ content, images }: HomeContentFormProps) {
               htmlFor="hero-image"
               error={errors.hero?.image?.message}
             >
-              <NativeSelect
-                id="hero-image"
-                aria-invalid={Boolean(errors.hero?.image)}
-                {...form.register("hero.image")}
-              >
-                {images.map((path) => (
-                  <option key={path} value={path}>
-                    {filename(path)}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={form.control}
+                name="hero.image"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                  >
+                    <SelectTrigger
+                      id="hero-image"
+                      aria-invalid={Boolean(errors.hero?.image)}
+                      onBlur={field.onBlur}
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {images.map((path) => (
+                        <SelectItem key={path} value={path}>
+                          {filename(path)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
           </SectionCard>
 

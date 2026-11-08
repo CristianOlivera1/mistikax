@@ -4,15 +4,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { FormField } from "@/components/shared/form-field";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { slugify } from "@/lib/slug";
 import { createPageAction, updatePageAction } from "../actions";
 import { PAGE_STATUSES, type ContentPage } from "../types";
@@ -175,17 +181,33 @@ export function PageForm({ page }: PageFormProps) {
               htmlFor="page-status"
               error={errors.status?.message}
             >
-              <NativeSelect
-                id="page-status"
-                aria-invalid={Boolean(errors.status)}
-                {...form.register("status")}
-              >
-                {Object.entries(PAGE_STATUSES).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                  >
+                    <SelectTrigger
+                      id="page-status"
+                      aria-invalid={Boolean(errors.status)}
+                      onBlur={field.onBlur}
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(PAGE_STATUSES).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
             <p className="text-muted-foreground text-xs">
               Las páginas publicadas aparecen en la tienda.

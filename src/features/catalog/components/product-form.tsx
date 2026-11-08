@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { Icon } from "@/components/icons/icon";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -17,7 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AGE_GROUPS, PRODUCT_STATUSES, STORE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -68,6 +74,7 @@ function buildDefaultValues(
     stock: sizes.map((size) => ({
       size,
       quantity: product?.stock[size] ?? 0,
+      originalQuantity: product?.stock[size] ?? 0,
     })),
     images: product?.images.length ? product.images : [PLACEHOLDER_IMAGE],
   };
@@ -124,10 +131,15 @@ export function ProductForm({
 
   useEffect(() => {
     const current = form.getValues("stock");
-    const next = sizes.map((size) => ({
-      size,
-      quantity: current.find((item) => item.size === size)?.quantity ?? 0,
-    }));
+    const next = sizes.map((size) => {
+      const previous = current.find((item) => item.size === size);
+
+      return {
+        size,
+        quantity: previous?.quantity ?? 0,
+        originalQuantity: previous?.originalQuantity ?? 0,
+      };
+    });
     const changed =
       next.length !== current.length ||
       next.some((item, index) => item.size !== current[index]?.size);
@@ -278,6 +290,12 @@ export function ProductForm({
                     type="hidden"
                     {...form.register(`stock.${index}.size`)}
                   />
+                  <input
+                    type="hidden"
+                    {...form.register(`stock.${index}.originalQuantity`, {
+                      valueAsNumber: true,
+                    })}
+                  />
                 </div>
               ))}
             </div>
@@ -381,17 +399,33 @@ export function ProductForm({
               htmlFor="product-status"
               error={errors.status?.message}
             >
-              <NativeSelect
-                id="product-status"
-                aria-invalid={Boolean(errors.status)}
-                {...form.register("status")}
-              >
-                {Object.entries(PRODUCT_STATUSES).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                  >
+                    <SelectTrigger
+                      id="product-status"
+                      aria-invalid={Boolean(errors.status)}
+                      onBlur={field.onBlur}
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(PRODUCT_STATUSES).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
             <SwitchField
               id="product-is-new"
@@ -421,34 +455,66 @@ export function ProductForm({
               htmlFor="product-category"
               error={errors.categoryId?.message}
             >
-              <NativeSelect
-                id="product-category"
-                aria-invalid={Boolean(errors.categoryId)}
-                {...form.register("categoryId")}
-              >
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                  >
+                    <SelectTrigger
+                      id="product-category"
+                      aria-invalid={Boolean(errors.categoryId)}
+                      onBlur={field.onBlur}
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
             <FormField
               label="Edad"
               htmlFor="product-age"
               error={errors.ageGroup?.message}
             >
-              <NativeSelect
-                id="product-age"
-                aria-invalid={Boolean(errors.ageGroup)}
-                {...form.register("ageGroup")}
-              >
-                {Object.entries(AGE_GROUPS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </NativeSelect>
+              <Controller
+                control={form.control}
+                name="ageGroup"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    name={field.name}
+                  >
+                    <SelectTrigger
+                      id="product-age"
+                      aria-invalid={Boolean(errors.ageGroup)}
+                      onBlur={field.onBlur}
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(AGE_GROUPS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </FormField>
           </SectionCard>
 
