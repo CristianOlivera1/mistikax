@@ -78,6 +78,13 @@
       "when": 1794160600000,
       "tag": "0010_checkout_idempotency_and_stock_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794160700000,
+      "tag": "0011_english_page_slugs",
+      "breakpoints": true
     }
   ]
 }

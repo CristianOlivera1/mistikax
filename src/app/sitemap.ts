@@ -38,17 +38,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.5,
     },
+    {
+      url: `${BASE_URL}/shipping`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
     ...products.map((product) => ({
       url: `${BASE_URL}/product/${product.id}`,
       lastModified: new Date(product.createdAt),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),
-    ...pages.map((page) => ({
-      url: `${BASE_URL}/pages/${page.id}`,
-      lastModified: new Date(page.updatedAt),
-      changeFrequency: "monthly" as const,
-      priority: 0.4,
-    })),
+    ...pages
+      .filter((page) => page.id !== "shipping")
+      .map((page) => ({
+        url: `${BASE_URL}/pages/${page.id}`,
+        lastModified: new Date(page.updatedAt),
+        changeFrequency: "monthly" as const,
+        priority: 0.4,
+      })),
   ];
 }

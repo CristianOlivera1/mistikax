@@ -6,6 +6,8 @@ import { asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { faqs, homeContent, homeSections, pages } from "@/db/schema";
+import { requireRole } from "@/features/auth/queries";
+import { normalizeHomeLink } from "./normalize-home-link";
 import {
   faqFormSchema,
   homeContentSchema,
@@ -51,6 +53,8 @@ function revalidateFaqs() {
 export async function updateHomeContentAction(
   rawValues: HomeContentFormValues,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsed = homeContentSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -58,6 +62,7 @@ export async function updateHomeContentAction(
   }
 
   const data = parsed.data;
+  const heroLink = normalizeHomeLink(data.hero.link);
 
   try {
     await db.transaction(async (tx) => {
@@ -70,7 +75,7 @@ export async function updateHomeContentAction(
           heroTitle: data.hero.title,
           heroSubtitle: data.hero.subtitle,
           heroCta: data.hero.cta,
-          heroLink: data.hero.link,
+          heroLink,
           heroImage: data.hero.image,
           updatedAt: new Date(),
         })
@@ -82,7 +87,7 @@ export async function updateHomeContentAction(
             heroTitle: data.hero.title,
             heroSubtitle: data.hero.subtitle,
             heroCta: data.hero.cta,
-            heroLink: data.hero.link,
+            heroLink,
             heroImage: data.hero.image,
             updatedAt: new Date(),
           },
@@ -130,6 +135,8 @@ async function buildPageId(slug: string): Promise<string> {
 export async function createPageAction(
   rawValues: PageFormValues,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsed = pageFormSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -160,6 +167,8 @@ export async function updatePageAction(
   rawId: string,
   rawValues: PageFormValues,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsedId = pageIdSchema.safeParse(rawId);
   const parsed = pageFormSchema.safeParse(rawValues);
 
@@ -198,6 +207,8 @@ export async function updatePageAction(
 export async function deletePageAction(
   rawId: string,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsed = pageIdSchema.safeParse(rawId);
 
   if (!parsed.success) {
@@ -226,6 +237,8 @@ async function nextFaqPosition(): Promise<number> {
 export async function createFaqAction(
   rawValues: FaqFormValues,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsed = faqFormSchema.safeParse(rawValues);
 
   if (!parsed.success) {
@@ -255,6 +268,8 @@ export async function updateFaqAction(
   rawId: string,
   rawValues: FaqFormValues,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsedId = faqIdSchema.safeParse(rawId);
   const parsed = faqFormSchema.safeParse(rawValues);
 
@@ -287,6 +302,8 @@ export async function updateFaqAction(
 export async function deleteFaqAction(
   rawId: string,
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsed = faqIdSchema.safeParse(rawId);
 
   if (!parsed.success) {
@@ -308,6 +325,8 @@ export async function moveFaqAction(
   rawId: string,
   direction: "up" | "down",
 ): Promise<ContentActionResult> {
+  await requireRole("admin", "editor");
+
   const parsed = faqIdSchema.safeParse(rawId);
 
   if (!parsed.success) {

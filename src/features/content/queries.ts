@@ -4,6 +4,7 @@ import { asc, desc, eq } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { faqs, homeContent, homeSections, pages } from "@/db/schema";
+import { normalizeHomeLink } from "./normalize-home-link";
 import { HOME_CONTENT } from "./fixtures";
 import type { ContentPage, FaqItem, HomeContent } from "./types";
 
@@ -17,15 +18,10 @@ function fallbackHomeContent(): HomeContent {
 
 export const getHomeContent = cache(
   async function getHomeContent(): Promise<HomeContent> {
-    const [contentRow] = await db
-      .select()
-      .from(homeContent)
-      .where(eq(homeContent.id, 1))
-      .limit(1);
-    const sectionRows = await db
-      .select()
-      .from(homeSections)
-      .orderBy(asc(homeSections.position));
+    const [[contentRow], sectionRows] = await Promise.all([
+      db.select().from(homeContent).where(eq(homeContent.id, 1)).limit(1),
+      db.select().from(homeSections).orderBy(asc(homeSections.position)),
+    ]);
 
     if (!contentRow || sectionRows.length === 0) {
       return fallbackHomeContent();
@@ -40,7 +36,7 @@ export const getHomeContent = cache(
         title: contentRow.heroTitle,
         subtitle: contentRow.heroSubtitle,
         cta: contentRow.heroCta,
-        link: contentRow.heroLink,
+        link: normalizeHomeLink(contentRow.heroLink),
         image: contentRow.heroImage,
       },
       sections: sectionRows.map((row) => ({

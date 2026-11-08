@@ -45,11 +45,13 @@ const SECTION_COPY = {
 } as const;
 
 export default async function StoreHomePage() {
-  const homeContent = await getHomeContent();
-  const settings = await getSiteSettings();
-  const storeHome = await getStoreHomeData();
+  const [homeContent, settings, storeHome, faqs] = await Promise.all([
+    getHomeContent(),
+    getSiteSettings(),
+    getStoreHomeData(),
+    getFaqs(),
+  ]);
   const { byAge, categories, bestSellers, newArrivals } = storeHome;
-  const faqs = await getFaqs();
 
   const sections = homeContent.sections.filter((section) => section.visible);
 

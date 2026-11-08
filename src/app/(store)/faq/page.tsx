@@ -3,6 +3,7 @@ import { StoreBreadcrumbs } from "@/components/store/breadcrumbs";
 import { FaqAccordion } from "@/components/store/faq-accordion";
 import { StoreEmptyState } from "@/components/store/empty-state";
 import { getFaqs } from "@/features/content/queries";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export const metadata: Metadata = {
   title: "Preguntas frecuentes",
@@ -26,7 +27,7 @@ export default async function FaqPage() {
     <div className="mx-auto max-w-3xl px-6 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <StoreBreadcrumbs
         items={[{ label: "Inicio", href: "/" }, { label: "Preguntas frecuentes" }]}

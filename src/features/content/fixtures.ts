@@ -1,3 +1,4 @@
+import { TERMS_AND_CONDITIONS } from "./legal";
 import type { ContentPage, FaqItem, HomeContent } from "./types";
 
 const DAY_MS = 86_400_000;
@@ -32,7 +33,7 @@ export const HOME_CONTENT: HomeContent = {
 
 export const PAGES: ContentPage[] = [
   {
-    id: "nosotros",
+    id: "about",
     title: "Nosotros",
     body: "Mistikax es una tienda de ropa y calzado para hombre.\n\nVestimos a niños, jóvenes y adultos con prendas cómodas y de buena calidad.",
     seoDescription: "Conoce Mistikax, ropa y calzado para hombre.",
@@ -40,7 +41,7 @@ export const PAGES: ContentPage[] = [
     updatedAt: daysAgo(12),
   },
   {
-    id: "envios",
+    id: "shipping",
     title: "Envíos",
     body: "Preparamos tu pedido en 24 a 48 horas.\n\nEl envío es gratis desde S/ 200.",
     seoDescription: "Tiempos, costos y cobertura de envío.",
@@ -48,7 +49,7 @@ export const PAGES: ContentPage[] = [
     updatedAt: daysAgo(8),
   },
   {
-    id: "cambios",
+    id: "returns",
     title: "Cambios y devoluciones",
     body: "Tienes 7 días para cambiar la talla.\n\nLa prenda debe estar sin uso y con etiquetas.",
     seoDescription: "Cambios y devoluciones dentro de los 7 días.",
@@ -56,7 +57,7 @@ export const PAGES: ContentPage[] = [
     updatedAt: daysAgo(8),
   },
   {
-    id: "contacto",
+    id: "contact",
     title: "Contacto",
     body: "Escríbenos por WhatsApp o a hola@mistikax.com.",
     seoDescription: "Canales de atención de Mistikax.",
@@ -64,7 +65,11 @@ export const PAGES: ContentPage[] = [
     updatedAt: daysAgo(20),
   },
   {
-    id: "privacidad",
+    ...TERMS_AND_CONDITIONS,
+    updatedAt: daysAgo(2),
+  },
+  {
+    id: "privacy",
     title: "Política de privacidad",
     body: "",
     seoDescription: "",

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AnnouncementBar } from "@/components/store/announcement-bar";
+import { StoreShell } from "@/components/store/store-shell";
 import { StoreFooter } from "@/components/store/store-footer";
 import { StoreHeader } from "@/components/store/store-header";
 import { getStoreActiveCategoryNames } from "@/features/catalog/store-queries";
 import { getCartView } from "@/features/cart/queries";
 import { getHomeContent } from "@/features/content/queries";
+import { listPublishedPages } from "@/features/content/store-queries";
+import { getCustomerSession } from "@/features/customer-auth/queries";
 import { getSiteSettings } from "@/features/settings/queries";
 import { STORE_NAV } from "@/lib/nav";
 
@@ -64,28 +66,41 @@ function StorePageFallback() {
 }
 
 async function StoreLayoutContent({ children }: { children: ReactNode }) {
-  const categories = await getStoreActiveCategoryNames();
-  const settings = await getSiteSettings();
-  const homeContent = await getHomeContent();
-  const cart = await getCartView();
+  const [categories, settings, homeContent, cart, customer, pages] =
+    await Promise.all([
+      getStoreActiveCategoryNames(),
+      getSiteSettings(),
+      getHomeContent(),
+      getCartView(),
+      getCustomerSession(),
+      listPublishedPages(),
+    ]);
 
   const announcement = homeContent.announcement;
-  const searchTop = announcement.visible ? "top-[6.75rem]" : "top-20";
 
   return (
     <>
-      <div className="fixed inset-x-0 top-0 z-50">
-        {announcement.visible ? (
-          <AnnouncementBar text={announcement.text} />
-        ) : null}
-        <StoreHeader nav={STORE_NAV} searchTop={searchTop} cart={cart} />
-      </div>
-      <main
-        className={`flex-1 ${announcement.visible ? "pt-[calc(6.75rem+5rem)]" : "pt-20"}`}
+      <StoreShell
+        announcementText={announcement.visible ? announcement.text : null}
+        header={
+          <StoreHeader
+            nav={STORE_NAV}
+            customer={
+              customer
+                ? { fullName: customer.fullName, email: customer.email }
+                : null
+            }
+            cart={cart}
+          />
+        }
       >
         <Suspense fallback={<StorePageFallback />}>{children}</Suspense>
-      </main>
-      <StoreFooter categories={categories} settings={settings} />
+      </StoreShell>
+      <StoreFooter
+        categories={categories}
+        pages={pages.map(({ id, title }) => ({ id, title }))}
+        settings={settings}
+      />
     </>
   );
 }

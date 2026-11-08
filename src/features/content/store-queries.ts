@@ -1,6 +1,7 @@
 import "server-only";
 
 import { and, asc, desc, eq } from "drizzle-orm";
+import { cache } from "react";
 import { db } from "@/db";
 import { pages } from "@/db/schema";
 import type { ContentPage } from "./types";
@@ -16,17 +17,19 @@ function toContentPage(row: typeof pages.$inferSelect): ContentPage {
   };
 }
 
-export async function getPublishedPage(
-  slug: string,
-): Promise<ContentPage | undefined> {
-  const [row] = await db
-    .select()
-    .from(pages)
-    .where(and(eq(pages.id, slug), eq(pages.status, "published")))
-    .limit(1);
+export const getPublishedPage = cache(
+  async function getPublishedPage(
+    slug: string,
+  ): Promise<ContentPage | undefined> {
+    const [row] = await db
+      .select()
+      .from(pages)
+      .where(and(eq(pages.id, slug), eq(pages.status, "published")))
+      .limit(1);
 
-  return row ? toContentPage(row) : undefined;
-}
+    return row ? toContentPage(row) : undefined;
+  },
+);
 
 export async function listPublishedPages(): Promise<ContentPage[]> {
   const rows = await db

@@ -11,6 +11,7 @@ import {
   getStoreRelatedProducts,
 } from "@/features/catalog/store-queries";
 import { getSiteSettings } from "@/features/settings/queries";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 type ProductPageProps = {
   params: Promise<{ id: string }>;
@@ -34,7 +35,7 @@ export async function generateMetadata({
       description:
         product.seoDescription || product.description || `${product.name} en Mistikax.`,
       images: product.images[0] ? [product.images[0]] : undefined,
-      type: "website",
+      type: "article",
     },
   };
 }
@@ -75,7 +76,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     <div className="mx-auto max-w-[1400px] px-6 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <StoreBreadcrumbs
         items={[

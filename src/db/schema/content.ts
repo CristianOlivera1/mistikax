@@ -64,6 +64,16 @@ export const siteSettings = pgTable("site_settings", {
   currency: text("currency").notNull().default("PEN"),
   lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
   shippingCents: integer("shipping_cents").notNull().default(0),
+  shippingLimaCents: integer("shipping_lima_cents").notNull().default(1000),
+  shippingLimaOuterCents: integer("shipping_lima_outer_cents")
+    .notNull()
+    .default(1500),
+  shippingProvincesCents: integer("shipping_provinces_cents")
+    .notNull()
+    .default(2000),
+  pickupEnabled: boolean("pickup_enabled").notNull().default(true),
+  deliveryEnabled: boolean("delivery_enabled").notNull().default(true),
+  courierEnabled: boolean("courier_enabled").notNull().default(true),
   freeShippingThresholdCents: integer("free_shipping_threshold_cents")
     .notNull()
     .default(0),

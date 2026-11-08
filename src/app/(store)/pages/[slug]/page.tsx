@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { StoreBreadcrumbs } from "@/components/store/breadcrumbs";
 import { getPublishedPage } from "@/features/content/store-queries";
@@ -31,10 +32,69 @@ export default async function StoreContentPage({ params }: ContentPageProps) {
   if (!page) notFound();
 
   const settings = await getSiteSettings();
-  const paragraphs = page.body
+  const blocks = page.body
     .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
+    .map((block) => block.trim())
     .filter(Boolean);
+
+  function renderInline(text: string): ReactNode[] {
+    const parts: ReactNode[] = [];
+    const pattern = /\*\*(.+?)\*\*/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null = null;
+    let key = 0;
+
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      parts.push(<strong key={key++}>{match[1]}</strong>);
+      lastIndex = pattern.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : [text];
+  }
+
+  function renderBlock(block: string, index: number): ReactNode {
+    if (block.startsWith("### ")) {
+      return (
+        <h3
+          key={index}
+          className="font-heading text-xl font-light tracking-[0.05em] uppercase"
+        >
+          {block.slice(4)}
+        </h3>
+      );
+    }
+
+    if (block.startsWith("## ")) {
+      return (
+        <h2
+          key={index}
+          className="font-heading text-2xl font-light tracking-[0.05em] uppercase"
+        >
+          {block.slice(3)}
+        </h2>
+      );
+    }
+
+    const lines = block.split("\n");
+    if (lines.every((line) => line.startsWith("- "))) {
+      return (
+        <ul key={index} className="list-disc space-y-1 pl-6">
+          {lines.map((line, lineIndex) => (
+            <li key={lineIndex}>{renderInline(line.slice(2))}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return <p key={index}>{renderInline(block)}</p>;
+  }
 
   return (
     <article className="mx-auto max-w-3xl px-6 py-12">
@@ -45,9 +105,7 @@ export default async function StoreContentPage({ params }: ContentPageProps) {
         {page.title}
       </h1>
       <div className="text-grey-dark mt-8 space-y-4 text-base leading-relaxed">
-        {paragraphs.map((paragraph, index) => (
-          <p key={index}>{paragraph}</p>
-        ))}
+        {blocks.map(renderBlock)}
       </div>
 
       <div className="border-grey-light mt-12 border-t pt-8">
