@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { media, productImages } from "@/db/schema";
+import { requireRole } from "@/features/auth/queries";
 import {
   buildUploadObjectKey,
   deleteUploadFile,
@@ -24,10 +25,18 @@ function revalidateMedia() {
 export async function uploadMediaAction(
   formData: FormData,
 ): Promise<UploadResult> {
+  await requireRole("admin", "editor");
+
   const file = formData.get("file");
 
   if (!(file instanceof File)) {
     return { status: "error", message: "Selecciona un archivo." };
+  }
+
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return { status: "error", message: "El archivo no debe superar los 5 MB." };
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -43,17 +52,23 @@ export async function uploadMediaAction(
   const objectKey = buildUploadObjectKey(image.mime);
   const path = `/media/${objectKey}`;
 
-  await writeUploadFile(objectKey, image.bytes);
-  await db.insert(media).values({
-    path,
-    objectKey,
-    source: "upload",
-    mime: image.mime,
-    bytes: image.bytes.byteLength,
-    width: null,
-    height: null,
-    checksum: image.checksum,
-  });
+  await writeUploadFile(objectKey, image.bytes, image.mime);
+
+  try {
+    await db.insert(media).values({
+      path,
+      objectKey,
+      source: "upload",
+      mime: image.mime,
+      bytes: image.bytes.byteLength,
+      width: null,
+      height: null,
+      checksum: image.checksum,
+    });
+  } catch {
+    await deleteUploadFile(objectKey);
+    return { status: "error", message: "No se pudo guardar la imagen." };
+  }
 
   revalidateMedia();
 
@@ -67,6 +82,8 @@ type DeleteMediaResult =
 export async function deleteMediaAction(
   path: string,
 ): Promise<DeleteMediaResult> {
+  await requireRole("admin", "editor");
+
   const [row] = await db
     .select()
     .from(media)

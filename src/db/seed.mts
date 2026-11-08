@@ -1,14 +1,7 @@
-import { readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
-import { join } from "node:path";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import {
-  CATEGORIES,
-  COLORS,
-  IMAGE_LIBRARY,
-  PRODUCTS,
-} from "../features/catalog/fixtures";
+import { CATEGORIES, COLORS, PRODUCTS } from "../features/catalog/fixtures";
+import { CATALOG_IMAGES } from "../features/catalog/media-manifest";
 import { getSizes } from "../features/catalog/constants";
 import { computeOrderTotals } from "../features/orders/service";
 import { eq, inArray } from "drizzle-orm";
@@ -34,29 +27,10 @@ import {
   siteSettings,
 } from "./schema/content.ts";
 import { media } from "./schema/media.ts";
+import { TERMS_AND_CONDITIONS } from "../features/content/legal.ts";
 
-type MediaInsert = typeof media.$inferInsert;
 type ProductInsert = typeof products.$inferInsert;
 type StockInsert = typeof productStock.$inferInsert;
-
-const CATALOG_IMAGE_DIMENSIONS = { width: 480, height: 600 };
-
-function buildCatalogMedia(path: string): MediaInsert {
-  const objectKey = path.replace(/^\//, "");
-  const bytes = readFileSync(join(process.cwd(), "public", objectKey));
-  const checksum = createHash("sha256").update(bytes).digest("hex");
-
-  return {
-    path,
-    objectKey,
-    source: "catalog",
-    mime: "image/svg+xml",
-    bytes: bytes.byteLength,
-    width: CATALOG_IMAGE_DIMENSIONS.width,
-    height: CATALOG_IMAGE_DIMENSIONS.height,
-    checksum,
-  };
-}
 
 function buildProductRows(): Array<{
   product: ProductInsert;
@@ -97,21 +71,62 @@ const ORDER_COUNT = 180;
 const RNG_SEED = 20261104;
 
 const SEED_PEOPLE = [
-  { name: "Luis Quispe", email: "luis.q@mail.com", phone: "999 111 222", city: "Abancay" },
-  { name: "Carlos Huamán", email: "carlos.h@mail.com", phone: "999 333 444", city: "Cusco" },
-  { name: "Jorge Salas", email: "jorge.s@mail.com", phone: "999 555 666", city: "Lima" },
-  { name: "Miguel Torres", email: "miguel.t@mail.com", phone: "999 777 888", city: "Arequipa" },
-  { name: "Diego Flores", email: "diego.f@mail.com", phone: "999 000 111", city: "Abancay" },
-  { name: "Andrés Rojas", email: "andres.r@mail.com", phone: "999 222 333", city: "Cusco" },
-  { name: "Pedro Vargas", email: "pedro.v@mail.com", phone: "999 444 555", city: "Lima" },
-  { name: "Raúl Mamani", email: "raul.m@mail.com", phone: "999 666 777", city: "Puno" },
+  {
+    name: "Luis Quispe",
+    email: "luis.q@mail.com",
+    phone: "999 111 222",
+    city: "Abancay",
+  },
+  {
+    name: "Carlos Huamán",
+    email: "carlos.h@mail.com",
+    phone: "999 333 444",
+    city: "Cusco",
+  },
+  {
+    name: "Jorge Salas",
+    email: "jorge.s@mail.com",
+    phone: "999 555 666",
+    city: "Lima",
+  },
+  {
+    name: "Miguel Torres",
+    email: "miguel.t@mail.com",
+    phone: "999 777 888",
+    city: "Arequipa",
+  },
+  {
+    name: "Diego Flores",
+    email: "diego.f@mail.com",
+    phone: "999 000 111",
+    city: "Abancay",
+  },
+  {
+    name: "Andrés Rojas",
+    email: "andres.r@mail.com",
+    phone: "999 222 333",
+    city: "Cusco",
+  },
+  {
+    name: "Pedro Vargas",
+    email: "pedro.v@mail.com",
+    phone: "999 444 555",
+    city: "Lima",
+  },
+  {
+    name: "Raúl Mamani",
+    email: "raul.m@mail.com",
+    phone: "999 666 777",
+    city: "Puno",
+  },
 ] as const;
 
 const SEED_PAYMENT_METHODS = ["card", "transfer", "cod"] as const;
 
 const SEED_FLOW = ["pending", "paid", "shipped", "delivered"] as const;
 
-type SeedOrderStatus = "pending" | "paid" | "shipped" | "delivered" | "cancelled";
+type SeedOrderStatus =
+  "pending" | "paid" | "shipped" | "delivered" | "cancelled";
 
 type SeedHistoryEvent = { status: SeedOrderStatus; createdAt: Date };
 
@@ -136,7 +151,10 @@ function daysAgo(days: number): Date {
   return new Date(Date.now() - days * DAY_MS);
 }
 
-function buildSeedHistory(status: SeedOrderStatus, createdAtMs: number): SeedHistoryEvent[] {
+function buildSeedHistory(
+  status: SeedOrderStatus,
+  createdAtMs: number,
+): SeedHistoryEvent[] {
   const cap = Date.now();
   const at = (hours: number) =>
     new Date(Math.min(createdAtMs + hours * HOUR_MS, cap));
@@ -173,8 +191,13 @@ function buildOrderSeedData() {
 
     for (let lineIndex = 0; lineIndex < itemCount; lineIndex += 1) {
       const product = PRODUCTS[Math.floor(rng() * PRODUCTS.length)];
-      const category = CATEGORIES.find((item) => item.id === product.categoryId);
-      const sizes = getSizes(category?.sizeType ?? "one_size", product.ageGroup);
+      const category = CATEGORIES.find(
+        (item) => item.id === product.categoryId,
+      );
+      const sizes = getSizes(
+        category?.sizeType ?? "one_size",
+        product.ageGroup,
+      );
       const color =
         COLORS.find((item) => item.id === product.colorIds[0])?.name ?? "—";
 
@@ -241,7 +264,12 @@ function buildOrderSeedData() {
     );
   }
 
-  return { ids: orderRows.map((row) => row.id), orderRows, itemRows, historyRows };
+  return {
+    ids: orderRows.map((row) => row.id),
+    orderRows,
+    itemRows,
+    historyRows,
+  };
 }
 
 async function seed(connectionString: string) {
@@ -251,7 +279,12 @@ async function seed(connectionString: string) {
 
   try {
     await db.transaction(async (tx) => {
-      const mediaRows = IMAGE_LIBRARY.map(buildCatalogMedia);
+      const mediaRows = Object.values(CATALOG_IMAGES).map((image) => ({
+        ...image,
+        source: "catalog" as const,
+        width: null,
+        height: null,
+      }));
       await tx.insert(categories).values(CATEGORIES).onConflictDoNothing();
       await tx.insert(colors).values(COLORS).onConflictDoNothing();
       await tx.insert(media).values(mediaRows).onConflictDoNothing();
@@ -261,9 +294,15 @@ async function seed(connectionString: string) {
         .onConflictDoNothing();
 
       for (const row of rows) {
-        await tx.delete(productColors).where(eq(productColors.productId, row.product.id));
-        await tx.delete(productStock).where(eq(productStock.productId, row.product.id));
-        await tx.delete(productImages).where(eq(productImages.productId, row.product.id));
+        await tx
+          .delete(productColors)
+          .where(eq(productColors.productId, row.product.id));
+        await tx
+          .delete(productStock)
+          .where(eq(productStock.productId, row.product.id));
+        await tx
+          .delete(productImages)
+          .where(eq(productImages.productId, row.product.id));
 
         if (row.colorIds.length) {
           await tx.insert(productColors).values(
@@ -294,7 +333,7 @@ async function seed(connectionString: string) {
           storeName: "Mistikax",
           description: "Ropa y calzado para hombre.",
           email: "hola@mistikax.com",
-          whatsapp: "51999888777",
+          whatsapp: "51954306632",
           address: "Calle Principal 101, Ciudad",
           shippingCents: SHIPPING_CENTS,
           freeShippingThresholdCents: FREE_SHIPPING_CENTS,
@@ -317,7 +356,7 @@ async function seed(connectionString: string) {
             "Ropa y calzado para hombre. Para niños, jóvenes y adultos, en todas las tallas.",
           heroCta: "Ver catálogo",
           heroLink: "/catalog",
-          heroImage: "/images/products/camisa-lino.svg",
+          heroImage: CATALOG_IMAGES.hero.path,
           updatedAt: daysAgo(1),
         })
         .onConflictDoNothing();
@@ -327,11 +366,26 @@ async function seed(connectionString: string) {
         .values([
           { id: "age", label: "Compra por edad", enabled: true, position: 0 },
           { id: "categories", label: "Categorías", enabled: true, position: 1 },
-          { id: "best-sellers", label: "Más vendidos", enabled: true, position: 2 },
+          {
+            id: "best-sellers",
+            label: "Más vendidos",
+            enabled: true,
+            position: 2,
+          },
           { id: "benefits", label: "Beneficios", enabled: true, position: 3 },
           { id: "new", label: "Novedades", enabled: true, position: 4 },
-          { id: "steps", label: "Compra en 4 pasos", enabled: true, position: 5 },
-          { id: "faq", label: "Preguntas frecuentes", enabled: true, position: 6 },
+          {
+            id: "steps",
+            label: "Compra en 4 pasos",
+            enabled: true,
+            position: 5,
+          },
+          {
+            id: "faq",
+            label: "Preguntas frecuentes",
+            enabled: true,
+            position: 6,
+          },
         ])
         .onConflictDoNothing();
 
@@ -339,7 +393,7 @@ async function seed(connectionString: string) {
         .insert(pages)
         .values([
           {
-            id: "nosotros",
+            id: "about",
             title: "Nosotros",
             body: "Mistikax es una tienda de ropa y calzado para hombre.\n\nVestimos a niños, jóvenes y adultos con prendas cómodas y de buena calidad.",
             seoDescription: "Conoce Mistikax, ropa y calzado para hombre.",
@@ -347,7 +401,7 @@ async function seed(connectionString: string) {
             updatedAt: daysAgo(12),
           },
           {
-            id: "envios",
+            id: "shipping",
             title: "Envíos",
             body: "Preparamos tu pedido en 24 a 48 horas.\n\nEl envío es gratis desde S/ 200.",
             seoDescription: "Tiempos, costos y cobertura de envío.",
@@ -355,7 +409,7 @@ async function seed(connectionString: string) {
             updatedAt: daysAgo(8),
           },
           {
-            id: "cambios",
+            id: "returns",
             title: "Cambios y devoluciones",
             body: "Tienes 7 días para cambiar la talla.\n\nLa prenda debe estar sin uso y con etiquetas.",
             seoDescription: "Cambios y devoluciones dentro de los 7 días.",
@@ -363,7 +417,7 @@ async function seed(connectionString: string) {
             updatedAt: daysAgo(8),
           },
           {
-            id: "contacto",
+            id: "contact",
             title: "Contacto",
             body: "Escríbenos por WhatsApp o a hola@mistikax.com.",
             seoDescription: "Canales de atención de Mistikax.",
@@ -371,7 +425,11 @@ async function seed(connectionString: string) {
             updatedAt: daysAgo(20),
           },
           {
-            id: "privacidad",
+            ...TERMS_AND_CONDITIONS,
+            updatedAt: daysAgo(2),
+          },
+          {
+            id: "privacy",
             title: "Política de privacidad",
             body: "",
             seoDescription: "",
@@ -401,7 +459,8 @@ async function seed(connectionString: string) {
           {
             id: "faq-3",
             question: "¿Qué formas de pago aceptan?",
-            answer: "Tarjeta, transferencia y pago contra entrega según tu zona.",
+            answer:
+              "Tarjeta, transferencia y pago contra entrega según tu zona.",
             position: 2,
           },
         ])

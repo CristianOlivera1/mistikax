@@ -1,32 +1,55 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Suspense, use, useEffect, useState, type ReactNode } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { HomeAnnouncement } from "@/features/content/types";
 import { AnnouncementBar } from "./announcement-bar";
 
 type StoreShellProps = {
-  announcementText: string | null;
+  announcement: Promise<HomeAnnouncement>;
   header: ReactNode;
   children: ReactNode;
 };
 
+type StoreAnnouncementProps = {
+  announcement: Promise<HomeAnnouncement>;
+  onVisibilityChange: (visible: boolean) => void;
+  onDismiss: () => void;
+};
+
+function StoreAnnouncement({
+  announcement,
+  onVisibilityChange,
+  onDismiss,
+}: StoreAnnouncementProps) {
+  const content = use(announcement);
+
+  useEffect(() => {
+    onVisibilityChange(content.visible);
+  }, [content.visible, onVisibilityChange]);
+
+  if (!content.visible) return null;
+
+  return <AnnouncementBar text={content.text} onDismiss={onDismiss} />;
+}
+
 export function StoreShell({
-  announcementText,
+  announcement,
   header,
   children,
 }: StoreShellProps) {
-  const [announcementVisible, setAnnouncementVisible] = useState(
-    announcementText !== null,
-  );
+  const [announcementVisible, setAnnouncementVisible] = useState(true);
 
   return (
     <>
       <div className="fixed inset-x-0 top-0 z-50">
-        {announcementVisible && announcementText !== null ? (
-          <AnnouncementBar
-            text={announcementText}
+        <Suspense fallback={<Skeleton className="h-7 w-full rounded-none" />}>
+          <StoreAnnouncement
+            announcement={announcement}
+            onVisibilityChange={setAnnouncementVisible}
             onDismiss={() => setAnnouncementVisible(false)}
           />
-        ) : null}
+        </Suspense>
         {header}
       </div>
       <main

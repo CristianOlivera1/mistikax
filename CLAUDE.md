@@ -8,8 +8,8 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 
 1. **English for all code.** Identifiers, types, file and folder names, database tables and columns, environment variables, branch names, comments, and commit messages are English. Spanish is only for user-facing copy and business content.
 2. **No comments by default.** Add one only when it explains a non-obvious *why*: a browser workaround, a security decision, a data invariant, or a surprising third-party behavior. Never narrate what the code does, never leave commented-out code, and never add JSDoc that repeats the types.
-3. **Supabase provides Postgres and Auth.** Use Drizzle ORM for application data and Supabase Auth through `@supabase/ssr` for identities and sessions. Do not add Supabase Storage, Realtime, or Edge Functions.
-4. **Images are local.** Committed content images live in `public/images`, brand logos stay in `public/svg`, and runtime uploads live in the configured upload directory on disk. Never add Supabase Storage, S3, Cloudinary, or remote image URLs to production data.
+3. **Supabase provides Postgres, Auth and Storage.** Use Drizzle ORM for application data, Supabase Auth through `@supabase/ssr` for identities and sessions, and Supabase Storage for runtime uploads. Do not add Realtime or Edge Functions.
+4. **Runtime images live in Supabase Storage.** Committed content images live in `public/images`, brand logos stay in `public/svg`, and uploads live in the private `mistikax-media` bucket (`SUPABASE_STORAGE_BUCKET`), served through `/media/[...path]`. Never add S3, Cloudinary, or remote image URLs to production data.
 5. **UI stack is fixed.** Use shadcn/ui primitives, Tailwind CSS v4, and Iconify icons for application UI. Vendored shadcn components may keep their internal `lucide-react` imports; do not add another icon set or use lucide icons in application code.
 6. **TypeScript strict.** No `any`, no non-null assertions to silence errors, no `@ts-ignore`, and no disabled lint rules. Fix the type or validate the boundary with Zod.
 7. **Server-first.** Server Components are the default. Add `"use client"` only to the smallest interactive leaf. Do not fetch initial page data from `useEffect`.
@@ -32,7 +32,7 @@ Read `plan.md` before changing folders, routes, the design system, the database,
 | `src/db/` | Drizzle client, catalog/media/orders/content schema, and reproducible seed for catalog, orders, coupons, CMS and settings |
 | `src/features/settings/` | Store settings queries and persisted forms; the team view stays read-only until phase 6 |
 | `public/svg/` | Brand logos |
-| `storage/uploads/` | Local runtime uploads, organized as `YYYY/MM/<uuid>.<ext>` at runtime |
+| Supabase Storage `mistikax-media` | Private bucket for runtime uploads, organized as `YYYY/MM/<uuid>.<ext>` and served through `/media/[...path]` |
 | `plan.md` | Migration roadmap and target architecture |
 
 Store fonts load from `@import` in `src/app/globals.css`, not `next/font/google`; the latter breaks the store layout under Turbopack. The database pool in `src/db/index.ts` must keep `max` above one, or the store layout serializes all of its queries. See the README troubleshooting section for the full incident.
@@ -61,7 +61,7 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 ## 4. Architecture rules
 
 - One Next.js app with route groups. Storefront lives under `src/app/(store)`; admin lives under `src/app/(admin)/admin`; login lives under `src/app/(auth)`.
-- Every file, folder and route segment is English (`/catalog`, `/product/[id]`, `/cart`, `/checkout`, `/pages/[slug]`, `/size-guide`). Public copy, category slugs and page slugs stay in Spanish (`polos`, `/pages/envios`).
+- Every file, folder, route segment and CMS page slug is English (`/catalog`, `/product/[id]`, `/cart`, `/checkout`, `/pages/[slug]`, `/pages/terms-and-conditions`, `/size-guide`). Public copy and category/product slugs stay in Spanish (`polos`).
 - `src/app` only handles routing, layouts, metadata, and page composition. Domain logic belongs in `src/features/<domain>`.
 - A feature owns its components, queries, actions, schemas, and types. Cross-feature imports go through public module files, never through another feature's internals.
 - `src/components/ui` is vendored shadcn code. Do not fork it; add variants with `cva` and theme through tokens. Shared app primitives live in `src/components/shared`; area-specific patterns live in `src/components/admin` or `src/components/store`.
@@ -90,8 +90,8 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 - Supabase Auth is the identity provider. Validate the session with `getUser()` in server code; `getSession()` is not an authorization check and `user_metadata` is user-editable. Read the role from `public.profiles` and enforce it server-side.
 - The dashboard has two roles for now: `admin` and `editor`. Admin manages everything; editor manages catalog, content, and media. Enforce them server-side in layouts and actions; hiding a button is not authorization.
 - Environment variables are validated with Zod in `src/lib/env.ts`. Never expose a secret with a `NEXT_PUBLIC_` prefix; only the Supabase URL and publishable key are public.
-- Uploads must validate MIME type and magic bytes, reject path traversal, generate a random file name, enforce a size limit, and never trust the original filename. Store uploads outside `public` and serve them through the media route.
-- Local uploads require a persistent filesystem. Do not deploy to a serverless target where the upload directory is read-only or ephemeral.
+- Uploads must validate MIME type and magic bytes, reject path traversal, generate a random file name, enforce a size limit, and never trust the original filename. Store uploads in the private Supabase Storage bucket and serve them through the media route.
+- Never write new uploads to local disk. `storage/uploads` is only a legacy read fallback for files created before the Storage migration.
 
 ## 6. UI rules
 
@@ -129,7 +129,7 @@ Do not install a dependency that is not listed in `plan.md` without asking first
 - No `any`, no suppressed errors, no unused code.
 - Responsive at 375px, 768px, and 1280px; keyboard accessible.
 - Data validated at the boundary; authorization checked server-side.
-- Images are local; Supabase is used only for Postgres and Auth.
+- Runtime images live in Supabase Storage; Supabase provides Postgres, Auth and Storage.
 - `pnpm lint` and `pnpm build` pass.
 
 <!-- BEGIN:nextjs-agent-rules -->

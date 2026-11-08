@@ -1,5 +1,6 @@
 import type { AgeGroup, ProductStatus } from "../../lib/constants";
-import { PLACEHOLDER_IMAGE, getSizes } from "./constants";
+import { getSizes } from "./constants";
+import { CATALOG_IMAGES, PRODUCT_IMAGE_KEYS } from "./media-manifest";
 import type { CatalogCategory, CatalogColor, CatalogProduct } from "./types";
 
 export const CATEGORIES: CatalogCategory[] = [
@@ -306,11 +307,6 @@ export const PRODUCTS: CatalogProduct[] = PRODUCT_SEEDS.map((seed) => {
     soldCount: seed.soldCount,
     stock: buildStock(sizes, seed.stockTotal),
     colorIds: seed.colorIds,
-    images: [`/images/products/${seed.id}.svg`],
+    images: [CATALOG_IMAGES[PRODUCT_IMAGE_KEYS[seed.id]].path],
   };
 });
-
-export const IMAGE_LIBRARY = [
-  PLACEHOLDER_IMAGE,
-  ...new Set(PRODUCTS.map((product) => product.images[0])),
-];

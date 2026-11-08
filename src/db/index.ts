@@ -15,7 +15,7 @@ const globalForDb = globalThis as typeof globalThis & {
 export const client =
   globalForDb.mistikaxSql ??
   postgres(serverEnv.DATABASE_URL, {
-    idle_timeout: 0,
+    idle_timeout: 60,
     max_lifetime: 60 * 30,
     connect_timeout: 10,
     prepare: false,

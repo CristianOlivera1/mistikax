@@ -1,89 +1,159 @@
-# Mistikax
+<div align="center">
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="./public/svg/logo-full.svg"
+    width="48%"
+  />
 
-A menswear and footwear store in Peru (PEN) with an admin panel. The project is migrating the `dashboard.html` and `client.html` prototypes to a Next.js 16 app with reusable components.
+  <img
+    width="50%"
+    alt="Mdverse"
+    src="./public/svg/logo-full-white.svg"
+    width="48%"
+  />
+</picture>
 
-## Requirements
+  <p><strong>Menswear, footwear, and accessories for every age.</strong><br />A full-stack storefront and operations dashboard for a Peruvian retailer.</p>
+
+  <p>
+    <a href="https://nextjs.org"><img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white" /></a>
+    <a href="https://react.dev"><img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white" /></a>
+    <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" /></a>
+    <a href="https://tailwindcss.com"><img alt="Tailwind CSS 4" src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white" /></a>
+    <a href="https://supabase.com"><img alt="Supabase" src="https://img.shields.io/badge/Supabase-Postgres_%26_Auth-3FCF8E?logo=supabase&logoColor=white" /></a>
+    <a href="https://orm.drizzle.team"><img alt="Drizzle ORM" src="https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle&logoColor=black" /></a>
+    <a href="https://pnpm.io"><img alt="pnpm 11" src="https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white" /></a>
+  </p>
+</div>
+
+<div align="center">
+  <img src="./docs/images/storefront-prototype-home.png" width="100%" alt="Mistikax storefront prototype home" />
+</div>
+
+## What is Mistikax?
+
+Mistikax is a Spanish-language shopping experience and admin workspace for a menswear store in Peru. Customers can browse products, choose sizes, manage a cart, and place orders. Store staff can manage the catalog, inventory, orders, content, promotions, and store settings from one dashboard.
+
+The project is built as a single Next.js App Router application. Its original HTML prototypes remain design references; production behavior lives in typed React components, feature modules, server actions, and database queries.
+
+## Highlights
+
+| Storefront | Admin workspace |
+| --- | --- |
+| Product catalog with search, filters, sorting, and pagination | Sales overview with order and inventory indicators |
+| Product detail, size selection, and related products | Product, category, and size-level inventory management |
+| Cart, shipping selection, checkout, and order confirmation | Order search, status history, notes, and guarded transitions |
+| Customer accounts with email and Google sign-in | Customer, coupon, and store settings management |
+| FAQs, size guide, and editable informational pages | Home-page content, FAQs, and published page editors |
+
+Orders use transactional status changes, and cancelling an order restores its stock only once. Prices are stored as integer cents and presented in Peruvian soles (PEN).
+
+## Routes
+
+| Area | Routes |
+| --- | --- |
+| Store | `/`, `/catalog`, `/product/[id]`, `/cart`, `/checkout`, `/checkout/success` |
+| Customer account | `/account/sign-in`, `/account/sign-up`, `/account` |
+| Store information | `/pages/[slug]`, `/faq`, `/shipping`, `/size-guide` |
+| Admin | `/admin`, `/admin/products`, `/admin/categories`, `/admin/inventory` |
+| Sales | `/admin/orders`, `/admin/customers`, `/admin/coupons` |
+| Content and settings | `/admin/content/home`, `/admin/content/pages`, `/admin/content/faqs`, `/admin/media`, `/admin/settings` |
+| Authentication | `/login`, `/auth/callback` |
+
+Admin access is role-based (`admin` and `editor`) and enforced on the server. Customer accounts are separate from staff access.
+
+## Stack
+
+- **Application:** Next.js 16 App Router, React 19, TypeScript 5 (strict)
+- **UI:** Tailwind CSS v4, shadcn/ui, Radix UI, Iconify
+- **Data:** Supabase Postgres with Drizzle ORM and `postgres.js`
+- **Authentication:** Supabase Auth with `@supabase/ssr`
+- **Validation and forms:** Zod, React Hook Form
+- **Feedback and charts:** Sonner, Recharts
+- **Tests:** Vitest
+
+## Get started
+
+### Requirements
 
 - Node.js 24
 - pnpm 11
+- A Supabase project for Postgres and Auth
 
-## Development
+### Install and configure
 
 ```bash
 pnpm install
+cp .env.example .env
+```
+
+On PowerShell, use `Copy-Item .env.example .env` instead of `cp`.
+
+Fill in the values in `.env` for the database connections, Supabase URL and publishable key, server-only Supabase secret, cart-cookie secret, and local site URL. Use the pooled connection for runtime queries and the direct connection for migrations. Never expose server secrets through a `NEXT_PUBLIC_` variable or commit `.env`.
+
+Configure the Supabase Auth redirect URLs to include:
+
+- `http://localhost:3000/auth/callback`
+- `https://<your-domain>/auth/callback`
+
+Apply the database migrations and optionally load the development seed:
+
+```bash
+pnpm db:migrate
+pnpm db:seed
+```
+
+Start the development server:
+
+```bash
 pnpm dev
 ```
 
-The app is available at `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000).
 
-Current routes:
+## Useful commands
 
-- `/` — storefront placeholder
-- `/login` — admin sign-in with Supabase Auth and cookie session
-- `/admin` — dashboard with KPIs, a chart, low stock and recent orders from Postgres
-- `/admin/products`, `/admin/products/new`, `/admin/products/[id]` — catalog with search, filters, pagination, and a validated editor
-- `/admin/categories` — categories with size type and a create/edit dialog
-- `/admin/inventory` — stock by size and low-stock alerts
-- `/admin/orders`, `/admin/orders/[id]` — order list with status tabs, search and pagination; detail with items, totals, customer, history, status transitions and internal notes
-- `/admin/orders/export` — JSON export of all orders with their items snapshot
-- `/admin/customers` — customers derived from orders, with search
-- `/admin/coupons` — coupon table with real create, edit and delete
-- `/admin/content/home` — announcement, hero and home-section editor with preview
-- `/admin/content/pages`, `/admin/content/pages/new`, `/admin/content/pages/[id]` — page list and editor with real save and publication
-- `/admin/content/faqs` — FAQ list with create, edit, delete and persistent ordering
-- `/admin/media` — local media grid, uploads and deletion for user files
-- `/media/[...path]` — serves uploaded files from `storage/uploads` with immutable caching
-- `/admin/settings?tab=general|shipping|payments|team|appearance` — tabbed settings forms and team overview
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Run the development server |
+| `pnpm build` | Create a production build |
+| `pnpm start` | Serve the production build |
+| `pnpm lint` | Run ESLint |
+| `pnpm typecheck` | Check TypeScript without emitting files |
+| `pnpm test` | Run Vitest |
+| `pnpm db:generate` | Generate Drizzle migrations |
+| `pnpm db:migrate` | Apply migrations to the configured database |
+| `pnpm db:seed` | Seed catalog, orders, coupons, content, and settings |
 
-## Troubleshooting
-
-Three environment issues blocked the dev server in November 2026. They are fixed; check them first if the app stops loading.
-
-1. **Store pages stuck on the "Cargando la tienda" skeleton.** The store layout used `next/font/google`, and the compiler failed to resolve `@vercel/turbopack-next/internal/font/google/font`, so the layout never got past its Suspense fallback. The four families (Manrope, Oswald, Montserrat, Space Mono) now load from `@import` in `src/app/globals.css` and map through `.theme-store` variables. Do not reintroduce `next/font/google` in the store layout.
-2. **Every request waited on one database connection.** `src/db/index.ts` used `max: 1`, which serialized the store layout's ten-plus queries and pushed the page past two minutes. The pool now uses `max: 10` and `idle_timeout: 60`, still with `prepare: false` for the Supabase pooler.
-3. **`node_modules` corrupted after runner restarts.** Missing `next`, `react` and `drizzle-orm` produced confusing type and lint errors. `rm -rf node_modules && pnpm install` restores it, and no build or dev server should run while that reinstall is in progress.
-
-Verified after the fixes: `/` returns 200 in about 4 s with real content, `/admin/orders` returns 200, and `pnpm typecheck`, `pnpm test`, `pnpm lint` and `pnpm build` pass.
-
-## Available scripts
-
-```bash
-pnpm dev        # start the development server
-pnpm build      # create a production build
-pnpm start      # serve the production build
-pnpm lint       # run ESLint
-pnpm typecheck  # run TypeScript without emitting files
-pnpm format     # run Prettier and sort Tailwind classes
-pnpm db:generate # generate Drizzle migrations from the schema
-pnpm db:migrate  # apply Drizzle migrations to Supabase Postgres
-pnpm db:seed     # seed catalog, orders, coupons, CMS pages, FAQs, home and settings
-pnpm test       # run Vitest unit tests (order totals, transitions and stock)
-```
-
-## Project structure
+## Project layout
 
 ```text
 src/
-├─ app/          # routes, layouts, and metadata
-│  ├─ (store)/   # public storefront
-│  ├─ (admin)/   # private admin panel
-│  └─ (auth)/    # sign-in
-├─ components/   # shadcn/ui, shared components, and area-specific shells
-├─ features/     # domain components, queries, actions, and schemas
-├─ db/           # Drizzle schema, client, and seed
-├─ drizzle/      # generated migrations
-└─ lib/          # utilities, constants, and environment configuration
+├── app/          # Route groups, layouts, metadata, and page composition
+├── components/   # Shared, admin, store, and shadcn/ui components
+├── features/     # Domain queries, actions, schemas, and components
+├── db/           # Drizzle client, schema, and seed
+└── lib/            # Shared utilities and environment validation
+drizzle/          # SQL migrations
+public/images/    # Committed product and content images
+public/svg/       # Brand assets
+storage/uploads/  # Local runtime uploads; keep outside version control
 ```
 
-Local assets are in `public/images` and `public/svg`. Runtime uploads will be stored in `storage/uploads`, outside `public`.
+The application is server-first: pages load initial data on the server, and domain logic stays in `src/features/<domain>`. Mutations are validated at the boundary and protected server-side.
 
-## Status
+## Runtime notes
 
-Phases 1–5 are complete: the admin panel foundation, catalog with real Supabase Postgres persistence, product CRUD, archiving, duplication, inventory and category constraints, local media uploads served through `/media/[...path]`, and persistent orders, coupons, CMS pages, FAQs, home content and store settings. Order status transitions are transactional: cancelling restores stock once and every change is recorded in the order history. The admin Resumen computes its KPIs and daily series from real orders.
+- Store fonts load through CSS imports in `src/app/globals.css`; keep this approach for reliable Turbopack builds.
+- Keep the database pool above one connection, close idle connections after 60 seconds, and use `prepare: false` with the Supabase pooler so concurrent storefront queries are not serialized or retained indefinitely.
+- Runtime uploads use the configured local directory outside `public`. Production hosting must provide persistent writable storage; ephemeral serverless filesystems are not supported.
 
-Phase 6 is in progress: Supabase Auth sessions, cookie refresh in `src/proxy.ts`, real sign-in and sign-out, and `profiles` with `admin`/`editor` roles. Settings → Equipo lists the real profiles with their emails from the Auth Admin API, changes roles and deactivates access (the account is banned, not deleted); it never leaves the panel without an active admin. `profiles` has RLS enabled with read-only access to your own row. Accounts are created in Supabase Auth: the first one becomes `admin` through the trigger in migration `0005_first_user_admin`, later ones default to `editor`. Pending: validating sign-in with a real account, uploads made by real users, and Playwright end-to-end coverage.
+## Project status
+
+The storefront and admin feature set is implemented. The remaining roadmap is focused on final validation, accessibility and launch readiness. See [plan.md](./plan.md) for phase details and architecture decisions.
 
 ## Documentation
 
-- [plan.md](plan.md) — phases, target structure, data model, and storefront migration.
-- [CLAUDE.md](CLAUDE.md) — coding, architecture, UI, and security guidelines.
+- [Migration plan and architecture](./plan.md)
+- [Project conventions and security rules](./CLAUDE.md)

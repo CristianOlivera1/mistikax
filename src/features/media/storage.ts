@@ -1,9 +1,10 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
-import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { serverEnv } from "@/lib/env";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const IMAGE_MIME_EXTENSIONS: Record<string, string> = {
   "image/png": "png",
@@ -13,12 +14,20 @@ const IMAGE_MIME_EXTENSIONS: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const FILE_CACHE_MAX_BYTES = 32 * 1024 * 1024;
+
+const fileCache = new Map<string, Buffer>();
+let fileCacheBytes = 0;
+
+export const MEDIA_BUCKET = serverEnv.SUPABASE_STORAGE_BUCKET;
+
+let bucketReady: Promise<void> | null = null;
+
 function startsWith(bytes: Uint8Array, signature: number[]): boolean {
   if (bytes.length < signature.length) return false;
 
-  return signature.every(
-    (byte, index) => bytes[index] === (byte & 0xff),
-  );
+  return signature.every((byte, index) => bytes[index] === (byte & 0xff));
 }
 
 function detectImageMime(bytes: Uint8Array): string | null {
@@ -68,27 +77,10 @@ export function detectImage(bytes: Buffer): DetectedImage | null {
   };
 }
 
-export function uploadRoot() {
-  return resolve(process.cwd(), "storage", "uploads");
-}
-
-function isSafeObjectKey(objectKey: string): boolean {
-  if (!objectKey || objectKey.startsWith("/") || objectKey.startsWith("\\")) {
-    return false;
-  }
-
-  return objectKey
-    .split("/")
-    .every((segment) => /^[a-z0-9_-]+$/i.test(segment));
-}
-
-function safeUploadPath(objectKey: string): string | null {
-  if (!isSafeObjectKey(objectKey)) return null;
-
-  return join(uploadRoot(), /*turbopackIgnore: true*/ objectKey);
-}
-
-export function buildUploadObjectKey(mime: keyof typeof IMAGE_MIME_EXTENSIONS, now = new Date()) {
+export function buildUploadObjectKey(
+  mime: keyof typeof IMAGE_MIME_EXTENSIONS,
+  now = new Date(),
+) {
   const year = String(now.getFullYear());
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const extension = IMAGE_MIME_EXTENSIONS[mime] ?? "bin";
@@ -97,38 +89,184 @@ export function buildUploadObjectKey(mime: keyof typeof IMAGE_MIME_EXTENSIONS, n
   return `${year}/${month}/${id}.${extension}`;
 }
 
-export async function writeUploadFile(
-  objectKey: string,
-  bytes: Buffer,
-): Promise<void> {
-  const target = safeUploadPath(objectKey);
+async function ensureBucket(): Promise<void> {
+  const { error } = await supabaseAdmin.storage.getBucket(MEDIA_BUCKET);
 
-  if (!target) throw new Error("Ruta de subida de archivo inválida.");
+  if (!error) return;
 
-  await mkdir(join(target, ".."), { recursive: true });
-  await writeFile(target, bytes);
+  const { error: createError } = await supabaseAdmin.storage.createBucket(
+    MEDIA_BUCKET,
+    {
+      public: false,
+      fileSizeLimit: MAX_UPLOAD_BYTES,
+      allowedMimeTypes: Object.keys(IMAGE_MIME_EXTENSIONS),
+    },
+  );
+
+  if (createError && !/already exists/i.test(createError.message)) {
+    throw new Error(
+      `No se pudo preparar el bucket de medios: ${createError.message}`,
+    );
+  }
 }
 
-export async function readUploadFile(
-  objectKey: string,
-): Promise<Buffer | null> {
-  const target = safeUploadPath(objectKey);
+function readCachedFile(objectKey: string): Buffer | null {
+  const cached = fileCache.get(objectKey);
+
+  if (!cached) return null;
+
+  fileCache.delete(objectKey);
+  fileCache.set(objectKey, cached);
+
+  return cached;
+}
+
+function cacheFile(objectKey: string, bytes: Buffer): void {
+  const existing = fileCache.get(objectKey);
+
+  if (existing) {
+    fileCache.delete(objectKey);
+    fileCacheBytes -= existing.byteLength;
+  }
+
+  fileCache.set(objectKey, bytes);
+  fileCacheBytes += bytes.byteLength;
+
+  for (const [key, value] of fileCache) {
+    if (fileCacheBytes <= FILE_CACHE_MAX_BYTES) break;
+
+    fileCache.delete(key);
+    fileCacheBytes -= value.byteLength;
+  }
+}
+
+function invalidateCachedFile(objectKey: string): void {
+  const existing = fileCache.get(objectKey);
+
+  if (!existing) return;
+
+  fileCache.delete(objectKey);
+  fileCacheBytes -= existing.byteLength;
+}
+
+function mediaBucket(): Promise<void> {
+  bucketReady ??= ensureBucket().catch((error: unknown) => {
+    bucketReady = null;
+    throw error;
+  });
+
+  return bucketReady;
+}
+
+function isSafeObjectKey(objectKey: string): boolean {
+  if (!objectKey || objectKey.startsWith("/") || objectKey.startsWith("\\")) {
+    return false;
+  }
+
+  return objectKey.split("/").every((segment) => {
+    if (segment === "." || segment === "..") return false;
+
+    return /^[a-z0-9][a-z0-9._-]*$/i.test(segment);
+  });
+}
+
+function legacyUploadPath(objectKey: string): string | null {
+  if (!isSafeObjectKey(objectKey)) return null;
+
+  return join(
+    resolve(/*turbopackIgnore: true*/ process.cwd(), serverEnv.UPLOAD_DIR),
+    /*turbopackIgnore: true*/ objectKey,
+  );
+}
+
+async function readLegacyUpload(objectKey: string): Promise<Buffer | null> {
+  const target = legacyUploadPath(objectKey);
 
   if (!target) return null;
 
   try {
-    return await readFile(target);
+    return await readFile(/*turbopackIgnore: true*/ target);
   } catch {
     return null;
   }
 }
 
-export async function deleteUploadFile(
+async function readStorageUpload(objectKey: string): Promise<Buffer | null> {
+  try {
+    await mediaBucket();
+
+    const { data, error } = await supabaseAdmin.storage
+      .from(MEDIA_BUCKET)
+      .download(objectKey);
+
+    if (error) return null;
+
+    return Buffer.from(await data.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+export async function writeUploadFile(
   objectKey: string,
+  bytes: Buffer,
+  mime: string,
 ): Promise<void> {
-  const target = safeUploadPath(objectKey);
+  await mediaBucket();
 
-  if (!target) return;
+  const { error } = await supabaseAdmin.storage
+    .from(MEDIA_BUCKET)
+    .upload(objectKey, bytes, {
+      cacheControl: "31536000",
+      contentType: mime,
+      upsert: true,
+    });
 
-  await rm(target, { force: true });
+  if (error) {
+    throw new Error(
+      `No se pudo subir la imagen a Supabase Storage: ${error.message}`,
+    );
+  }
+
+  invalidateCachedFile(objectKey);
+}
+
+export async function readUploadFile(
+  objectKey: string,
+): Promise<Buffer | null> {
+  const cached = readCachedFile(objectKey);
+
+  if (cached) return cached;
+
+  const stored = await readStorageUpload(objectKey);
+
+  if (stored) {
+    cacheFile(objectKey, stored);
+    return stored;
+  }
+
+  const legacy = await readLegacyUpload(objectKey);
+
+  if (legacy) {
+    cacheFile(objectKey, legacy);
+  }
+
+  return legacy;
+}
+
+export async function deleteUploadFile(objectKey: string): Promise<void> {
+  invalidateCachedFile(objectKey);
+
+  try {
+    await mediaBucket();
+    await supabaseAdmin.storage.from(MEDIA_BUCKET).remove([objectKey]);
+  } catch {
+    // Keep deleting the legacy file when Storage is unavailable.
+  }
+
+  const legacy = legacyUploadPath(objectKey);
+
+  if (legacy) {
+    await rm(legacy, { force: true }).catch(() => undefined);
+  }
 }

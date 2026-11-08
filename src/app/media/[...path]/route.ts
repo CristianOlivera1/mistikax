@@ -8,13 +8,51 @@ type MediaRouteContext = {
   params: Promise<{ path: string[] }>;
 };
 
-function pathFromSegments(segments: string[]): string | null {
-  if (segments.length === 0) return null;
-  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+type MediaRow = typeof media.$inferSelect;
+
+const MEDIA_ROW_TTL_MS = 5 * 60_000;
+const MEDIA_ROW_CACHE_MAX = 500;
+
+const mediaRowCache = new Map<
+  string,
+  { row: MediaRow; expiresAt: number }
+>();
+
+function readCachedMediaRow(path: string): MediaRow | null {
+  const cached = mediaRowCache.get(path);
+
+  if (!cached) return null;
+
+  if (cached.expiresAt <= Date.now()) {
+    mediaRowCache.delete(path);
     return null;
   }
 
-  return `/${segments.join("/")}`;
+  return cached.row;
+}
+
+function cacheMediaRow(path: string, row: MediaRow): void {
+  if (mediaRowCache.size >= MEDIA_ROW_CACHE_MAX) {
+    const oldest = mediaRowCache.keys().next().value;
+
+    if (oldest) mediaRowCache.delete(oldest);
+  }
+
+  mediaRowCache.set(path, {
+    row,
+    expiresAt: Date.now() + MEDIA_ROW_TTL_MS,
+  });
+}
+
+function pathFromSegments(segments: string[]): string | null {
+  if (segments.length === 0) return null;
+  if (
+    segments.some((segment) => !segment || segment === "." || segment === "..")
+  ) {
+    return null;
+  }
+
+  return `/media/${segments.join("/")}`;
 }
 
 export async function GET(_request: NextRequest, context: MediaRouteContext) {
@@ -25,13 +63,24 @@ export async function GET(_request: NextRequest, context: MediaRouteContext) {
     return new NextResponse(null, { status: 404 });
   }
 
-  const [row] = await db
-    .select()
-    .from(media)
-    .where(eq(media.path, pathValue))
-    .limit(1);
+  let row = readCachedMediaRow(pathValue);
 
-  if (!row || row.source !== "upload") {
+  if (!row) {
+    const [found] = await db
+      .select()
+      .from(media)
+      .where(eq(media.path, pathValue))
+      .limit(1);
+
+    if (!found) {
+      return new NextResponse(null, { status: 404 });
+    }
+
+    cacheMediaRow(pathValue, found);
+    row = found;
+  }
+
+  if (row.source !== "upload" && row.source !== "catalog") {
     return new NextResponse(null, { status: 404 });
   }
 
@@ -45,8 +94,10 @@ export async function GET(_request: NextRequest, context: MediaRouteContext) {
     status: 200,
     headers: {
       "Content-Type": row.mime,
-      "Content-Length": String(row.bytes),
+      "Content-Length": String(bytes.length),
       "Cache-Control": "public, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; sandbox",
     },
   });
 }

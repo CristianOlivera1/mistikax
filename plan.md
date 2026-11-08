@@ -1,6 +1,6 @@
 # Plan de migración — Mistikax
 
-> **Estado:** Fases 0–5 completadas. Catálogo, ventas, contenido y ajustes persisten en Supabase Postgres con Drizzle; el panel funciona de punta a punta salvo la autenticación (Fase 6). La tienda avanza en paralelo (Fase 7 en curso).
+> **Estado:** Fases 0–12 completadas. Catálogo, ventas, contenido, ajustes, autenticación con roles y equipo persisten en Supabase Postgres con Drizzle y Supabase Auth; las subidas de medios viven en Supabase Storage. El panel funciona de punta a punta y la tienda pública está implementada. Queda la Fase 13 (pruebas, accesibilidad medida y cierre).
 
 Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 con componentes reutilizables, y deja preparada la migración futura de `client.html`. La prioridad es que cada pantalla del admin quede cubierta, que el código sea mantenible y que la tienda pueda reutilizar la misma base técnica.
 
@@ -13,11 +13,11 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | Autenticación | Supabase Auth con `@supabase/ssr` y cookies, con dos roles por ahora: `admin` y `editor` |
 | UI | shadcn/ui + Tailwind CSS v4 + Iconify |
 | Temas | Dos temas sobre una misma base de primitivas: admin denso y tienda editorial |
-| Imágenes | Locales: contenido en `public/images`, logos en `public/svg`, subidas en `storage/uploads`; sin Supabase Storage |
+| Imágenes | Contenido en `public/images`, logos en `public/svg`; subidas en el bucket privado `mistikax-media` de Supabase Storage, servidas por `/media/[...path]` |
 | Datos | Server Components para lectura, Server Actions + Zod para escritura |
-| Idioma | Código, archivos y base de datos en inglés; copy de UI en español (`es-PE`) |
+| Idioma | Código, archivos, rutas y slugs de página en inglés; copy de UI en español (`es-PE`) |
 | Paquete | pnpm |
-| Despliegue | Node autoalojado con disco persistente; el sistema de archivos local es requisito |
+| Despliegue | Node autoalojado; ya no requiere disco persistente, porque los medios viven en Supabase Storage |
 
 ## Ruta rápida
 
@@ -27,7 +27,7 @@ Este plan convierte el panel de `dashboard.html` en una aplicación Next.js 16 c
 | 1 | Shell y kit del admin | Completada: navegación, layout, primitivas y Resumen con fixtures | No |
 | 2 | Catálogo (UI) | Completada: productos, editor, categorías e inventario con fixtures | No |
 | 3 | Ventas y contenido (UI) | Completada: pedidos, clientes, descuentos, CMS y ajustes con fixtures | No |
-| 4 | Catálogo de punta a punta | Completada: Drizzle, seed, CRUD real y subidas locales | Sí |
+| 4 | Catálogo de punta a punta | Completada: Drizzle, seed, CRUD real y subidas a Supabase Storage | Sí |
 | 5 | Ventas y contenido de punta a punta | Completada: pedidos, transacciones, CMS y ajustes persistentes | Sí |
 | 6 | Autenticación, roles y equipo | En curso: auth, proxy, perfiles, roles y tabla de equipo listos; falta validar el login con una cuenta real | No |
 | 6 | Auth y roles | Login, sesiones, permisos y equipo | Sí |
@@ -104,8 +104,6 @@ mistikax/
 ├─ public/
 │  ├─ images/                      # imágenes de contenido versionadas
 │  └─ svg/                         # logos e isotipos existentes
-├─ storage/
-│  └─ uploads/                     # gitignored; volumen persistente en producción
 ├─ src/
 │  ├─ app/
 │  │  ├─ layout.tsx                # html, idioma, metadata raíz
@@ -153,7 +151,7 @@ mistikax/
 │  │  │     │  └─ faqs/page.tsx
 │  │  │     ├─ media/page.tsx
 │  │  │     └─ settings/page.tsx
-│  │  └─ media/[...path]/route.ts   # sirve uploads locales
+│  │  └─ media/[...path]/route.ts   # sirve objetos desde Supabase Storage
 │  ├─ components/
 │  │  ├─ ui/                        # shadcn generado; no se bifurca
 │  │  ├─ admin/                     # shell y patrones del panel
@@ -193,7 +191,6 @@ mistikax/
 │  │  ├─ env.ts
 │  │  ├─ format.ts
 │  │  ├─ money.ts
-│  │  ├─ uploads.ts
 │  │  ├─ utils.ts
 │  │  └─ supabase/
 │  │     ├─ client.ts
@@ -231,9 +228,9 @@ Reglas adicionales:
 
 ### Rutas y nombres
 
-- **Tienda:** rutas en inglés: `/catalog`, `/product/[id]`, `/cart`, `/checkout`, `/pages/[slug]`, `/size-guide`, `/faq`. El copy y los slugs públicos de contenido siguen en español.
+- **Tienda:** rutas en inglés: `/catalog`, `/product/[id]`, `/cart`, `/checkout`, `/pages/[slug]`, `/shipping`, `/size-guide`, `/faq`. Los slugs de página también van en inglés; el copy visible sigue en español.
 - **Admin:** URLs en inglés, porque es una herramienta interna y coincide con el dominio del código. `/admin/products`, `/admin/orders`, `/admin/content/pages`.
-- Esta es la única excepción a la regla de nombres en inglés: los segmentos públicos de la tienda son copy orientado al usuario, no API interna.
+- Los slugs de categoría y producto conservan el texto comercial en español por SEO; los slugs de página y todos los segmentos de ruta usan inglés.
 - **Login:** `/login`, fuera del layout protegido, para evitar bucles de redirección.
 - Los slugs de producto y de página son estables. Un cambio de slug requiere redirect.
 - Los identificadores de base de datos y de archivos son ingleses; los textos de interfaz son españoles.
@@ -298,7 +295,7 @@ Implementación:
 | `recharts` | Gráfico de ventas del Resumen | Pendiente |
 | `@tanstack/react-table` | Tablas con orden y paginación cuando haga falta | Pendiente |
 | `drizzle-orm`, `postgres`, `drizzle-kit` | Base de datos y migraciones | Instalado en Fase 4 |
-| `@supabase/supabase-js`, `@supabase/ssr` | Auth, sesiones con cookies y Admin API | Pendiente (Fase 6) |
+| `@supabase/supabase-js`, `@supabase/ssr` | Auth, sesiones con cookies y Admin API | Instalado (Fase 6) |
 | `date-fns` | Fechas y rangos | Pendiente |
 | `vitest`, `@testing-library/react`, `playwright` | Pruebas | Pendiente |
 
@@ -371,17 +368,17 @@ Drizzle define el esquema en `src/db/schema`. Las migraciones viven en el repo; 
 | --- | --- | --- |
 | `categories` | `id`, `slug`, `name`, `size_type`, `position` | `size_type`: `clothing`, `footwear`, `one_size` |
 | `products` | `id`, `slug`, `name`, `description`, `seo_description`, `category_id`, `age_group`, `status`, `price_cents`, `compare_at_cents`, `is_new`, `is_best_seller`, `sold_count`, `created_at`, `updated_at` | `status`: `active`, `draft`, `archived`; `age_group`: `kids`, `teens`, `adults` |
-| `product_images` | `id`, `product_id`, `path`, `alt`, `position` | La posición 0 es la principal; `path` es relativo al directorio de uploads |
+| `product_images` | `id`, `product_id`, `path`, `alt`, `position` | La posición 0 es la principal; `path` es la URL `/media/...` del objeto en Storage |
 | `product_sizes` | `product_id`, `size`, `stock` | Clave compuesta; el stock es por talla, como en el prototipo |
 | `colors` | `id`, `name`, `hex` | Paleta normalizada; el prototipo usa claves como `ng`, `bl`, `az` |
 | `product_colors` | `product_id`, `color_id` | Relación N:M |
-| `orders` | `id`, `number`, `customer_name`, `email`, `phone`, `city`, `address`, `status`, `payment_method`, `shipping_cents`, `subtotal_cents`, `total_cents`, `note`, `created_at`, `updated_at` | `status`: `pending`, `paid`, `shipped`, `delivered`, `cancelled`; `number` es el número humano |
+| `orders` | `id`, `number`, `customer_name`, `email`, `phone`, `city`, `address`, `status`, `payment_method`, `shipping_cents`, `subtotal_cents`, `total_cents`, `customer_id`, `coupon_code`, `discount_cents`, `note`, `created_at`, `updated_at` | `status`: `pending`, `paid`, `shipped`, `delivered`, `cancelled`; `number` es el número humano; `customer_id` vincula al cliente logueado; `coupon_code` y `discount_cents` registran el descuento aplicado |
 | `order_items` | `id`, `order_id`, `product_id`, `product_name`, `size`, `color_name`, `unit_price_cents`, `quantity` | Guarda snapshot del nombre, talla y color; el producto puede archivarse |
 | `order_status_history` | `id`, `order_id`, `status`, `changed_by`, `created_at` | Historial visible en el detalle |
-| `coupons` | `id`, `code`, `kind`, `value`, `uses`, `expires_at`, `active` | `kind`: `percent` o `fixed`; `value` es porcentaje entero o centavos |
+| `coupons` | `id`, `code`, `kind`, `value`, `uses`, `max_uses`, `expires_at`, `active` | `kind`: `percent` o `fixed`; `value` es porcentaje entero o centavos; `max_uses` = 0 significa sin límite |
 | `pages` | `id`, `slug`, `title`, `body`, `seo_description`, `status`, `updated_at` | `body` es texto plano con párrafos separados por línea en blanco |
 | `faqs` | `id`, `question`, `answer`, `position` | Orden explícito |
-| `media` | `id`, `path`, `filename`, `mime_type`, `size_bytes`, `width`, `height`, `created_by`, `created_at` | Metadatos del archivo local |
+| `media` | `id`, `path`, `object_key`, `source`, `mime`, `bytes`, `width`, `height`, `checksum`, `created_at` | Metadatos del objeto en Supabase Storage; `source` distingue `catalog` de `upload` |
 | `site_settings` | `id`, `store_name`, `description`, `email`, `whatsapp`, `address`, `currency`, `low_stock_threshold`, `shipping_cents`, `free_shipping_threshold_cents`, `lead_time`, `payment flags`, `transfer_instructions`, `primary_color`, `accent_color` | Fila única; alimenta la tienda y el admin |
 | `home_content` | `announcement_enabled`, `announcement_text`, `hero_title`, `hero_subtitle`, `hero_cta`, `hero_link`, `hero_image`, `updated_at` | Fila única |
 | `home_sections` | `id`, `kind`, `enabled`, `position` | Orden de las secciones de la portada |
@@ -428,7 +425,7 @@ Decisiones del modelo:
 
 ## 6. Fases de migración
 
-### Fase 0 — Fundaciones y sistema de diseño · Completada
+### Fase 0 — Fundaciones y sistema de diseño · Completada ✅
 
 **Objetivo:** dejar el proyecto listo para recibir componentes, sin lógica de negocio.
 
@@ -446,7 +443,7 @@ Decisiones del modelo:
 
 **Siguiente:** Fase 1, shell del admin y primitivas de presentación.
 
-### Fase 1 — Shell del admin, primitivas y Resumen
+### Fase 1 — Shell del admin, primitivas y Resumen · Completada ✅
 
 **Objetivo:** reconstruir el marco del panel y demostrar el kit de UI con datos tipados.
 
@@ -463,7 +460,7 @@ Decisiones del modelo:
 
 **Siguiente:** Fase 2, catálogo con datos de prueba (completada).
 
-### Fase 2 — Catálogo: UI completa · Completada
+### Fase 2 — Catálogo: UI completa · Completada ✅
 
 **Objetivo:** migrar las pantallas de catálogo a componentes con datos de prueba tipados.
 
@@ -481,7 +478,7 @@ Decisiones del modelo:
 
 **Siguiente:** Fase 3, ventas y contenido (completada).
 
-### Fase 3 — Ventas y contenido: UI completa · Completada
+### Fase 3 — Ventas y contenido: UI completa · Completada ✅
 
 **Objetivo:** cubrir el resto del admin antes de conectar la base de datos.
 
@@ -501,7 +498,7 @@ Decisiones del modelo:
 
 **Siguiente:** Fase 4, catálogo de punta a punta y medios locales.
 
-### Fase 4 — Catálogo de punta a punta y medios locales · Completada · Completada ✅
+### Fase 4 — Catálogo de punta a punta y medios locales · Completada ✅
 
 **Objetivo:** conectar el catálogo a Supabase Postgres y habilitar la subida local de imágenes.
 
@@ -522,7 +519,7 @@ Decisiones del modelo:
 
 **Nota del pool:** con `max: 1`, ejecutar en secuencia las consultas Drizzle independientes en tienda y admin; no agruparlas con `Promise.all`.
 
-### Fase 5 — Ventas, contenido y ajustes de punta a punta · Completada
+### Fase 5 — Ventas, contenido y ajustes de punta a punta · Completada ✅
 
 **Objetivo:** persistir pedidos, clientes, descuentos, CMS y configuración.
 
@@ -536,9 +533,9 @@ Decisiones del modelo:
 
 **Estado:** completada. El esquema `src/db/schema/orders.ts` (`orders`, `order_items` con snapshot, `order_status_history`, `coupons`) y `content.ts` (`pages`, `faqs`, `home_content`, `home_sections`, `site_settings`) se aplicó con la migración `0002`. El seed (`pnpm db:seed`) carga 180 pedidos, 371 items, 667 eventos de historial, 3 cupones, 5 páginas, 3 preguntas, las 7 secciones de portada y la fila única de ajustes. Las queries de pedidos, clientes derivados, cupones, contenido, ajustes y Resumen son async con Drizzle; el Resumen calcula la serie diaria con SQL agrupado por día de Lima. El servicio puro `features/orders/service.ts` valida transiciones, totales y deltas de stock, con 8 pruebas en Vitest (`pnpm test`). La acción de transición bloquea el pedido en la transacción, registra el evento en el historial y restaura el stock una sola vez al cancelar solo desde `pending`/`paid`; las notas internas, cupones, páginas, FAQs (con reordenamiento), portada y los cuatro grupos de ajustes guardan con Zod. `GET /admin/orders/export` descarga los pedidos en JSON con `Cache-Control: no-store`. Las páginas del admin que consultan la base son dinámicas para no prerenderizar datos. `pnpm lint`, `pnpm typecheck` y `pnpm build` pasan.
 
-**Siguiente:** Fase 6, autenticación, roles y equipo.
+**Siguiente:** Fase 7, shell, footer y home de la tienda.
 
-### Fase 6 — Autenticación, roles y equipo
+### Fase 6 — Autenticación, roles y equipo · Completada ✅
 
 **Objetivo:** cerrar el admin y aplicar permisos reales.
 
@@ -560,6 +557,8 @@ Decisiones del modelo:
 - Ocultar navegación no permitida, pero repetir la autorización en el servidor.
 
 **Salida:** sin sesión, `/admin` redirige a `/login`; cada rol solo accede a lo suyo; las acciones rechazan roles indebidos; no hay secretos en el cliente.
+
+**Estado:** completada ✅. Migraciones `0003`–`0006`: `profiles` con `admin`/`editor`/`customer`, RLS de lectura propia, trigger `handle_new_user` con el primer usuario como administrador y saneo del rol antiguo. `src/proxy.ts` refresca la sesión en `/admin`, `/login` y `/account`; `(admin)/admin/layout.tsx` valida `getUser()` + `profiles` y aplica `canAccessAdminPath`, y las acciones usan `requireRole` o comprueban el rol. `/login` autentica con `signInWithPassword` en una Server Action, rechaza cuentas inactivas o `customer` y cierra sesión con `signOutAction`. El equipo vive en Ajustes → Equipo: listar, cambiar rol y desactivar con la Admin API (baneo permanente), con guardas para no quitarse el acceso ni dejar el panel sin administradores. Verificado en vivo: `/login` responde 200, `/admin` sin sesión responde 307 → `/login`, y la cuenta `oliverachavezcristian@gmail.com` inicia sesión correctamente con `role = admin` y `active = true`. Las invitaciones por email siguen deshabilitadas a propósito hasta configurar SMTP en Supabase.
 
 ### Fase 7 — Tienda: shell, footer y home · Completada ✅
 
@@ -627,13 +626,13 @@ Las fases 7 a 12 corren en paralelo al trabajo del dashboard con reglas de convi
 
 **Salida:** de agregar al carrito a pedido pendiente visible en el admin, con stock decrementado y mensaje de WhatsApp correcto; recargar `/checkout/success` sin token no muestra datos del pedido.
 
-**Estado:** completada ✅. `/checkout` muestra el formulario validado con Zod + RHF (y otra vez en la acción), métodos de pago filtrados por `site_settings` y resumen del servidor. `createOrderAction` valida cada línea, calcula subtotal/envío/total, inserta `orders`, `order_items` y `order_status_history`, descuenta stock con guardas dentro de una transacción y limpia el carrito; devuelve número, token HMAC y URL de WhatsApp. `/checkout/success` solo muestra el pedido con token válido. Nota: el pedido se prueba con la tabla `orders` ya migrada por la Fase 5.
+**Estado:** completada ✅. `/checkout` muestra el formulario validado con Zod + RHF (y otra vez en la acción), métodos de pago filtrados por `site_settings`, campo de código de cupón y resumen del servidor. `createOrderAction` valida cada línea, valida cupón (activo, no expirado, `max_uses`, descuento porcentual o fijo con cap al subtotal), calcula subtotal/descuento/envío/total, inserta `orders` (con `customer_id`, `coupon_code`, `discount_cents`), `order_items` y `order_status_history`, descuenta stock e incrementa `uses` del cupón dentro de una transacción y limpia el carrito; devuelve número, token HMAC y URL de WhatsApp. `/checkout/success` solo muestra el pedido con token válido. Migración `0009_orders_customer_coupons.sql` aplicada. `paymentCard` y `paymentWallet` marcados como «Próximamente» en ajustes.
 
 #### Fase 12 — Tienda: páginas informativas, guía de tallas, FAQ y 404 · Completada ✅
 
 **Objetivo:** cerrar el mapa de contenidos de la tienda. Gate: CMS persistido de la Fase 5.
 
-- `/pages/[slug]` con `getPublishedPage` (párrafos por línea en blanco, sin HTML), CTA de WhatsApp y `notFound()` si no está publicada; seed de `envios`, `cambios`, `nosotros`, `contacto`, `privacidad` y `terminos-del-servicio`.
+- `/pages/[slug]` con `getPublishedPage` (párrafos por línea en blanco, sin HTML), CTA de WhatsApp y `notFound()` si no está publicada; seed de `shipping`, `returns`, `about`, `contact`, `privacy` y `terms-and-conditions`.
 - `/size-guide` con las 6 tablas de `size-guide.ts`; `/faq` con todas las preguntas en acordeón nativo; 404 de tienda con vuelta al inicio.
 
 **Salida:** todos los enlaces de header, footer y menú móvil tienen destino real; ninguna página muerta ni `href="#"`.
@@ -647,7 +646,7 @@ Las fases 7 a 12 corren en paralelo al trabajo del dashboard con reglas de convi
 
 **Salida de la Fase 12 (cierre de la tienda):** paridad funcional y visual con `client.html`; el checkout crea un pedido real que el admin gestiona; Lighthouse de accesibilidad y SEO en verde; imágenes locales; cero `innerHTML`, cero `localStorage` de carrito y cero URLs remotas.
 
-**Estado:** completada ✅. `/pages/[slug]` sirve solo páginas `published` con párrafos por línea en blanco, metadata, canonical y CTA de WhatsApp; `/size-guide` incluye las tablas de ropa por edad y el calzado 28–44; `/faq` lista todas las preguntas con acordeón nativo y JSON-LD `FAQPage`; `not-found.tsx` de tienda con vuelta al inicio; `sitemap.ts` y `robots.ts` cubren productos activos, páginas publicadas y excluyen carrito/checkout. Pendiente de la Fase 13: la auditoría de accesibilidad medida y la prueba end-to-end con pedido real en el admin.
+**Estado:** completada ✅. `/pages/[slug]` sirve solo páginas `published` con soporte de markdown básico (`## `, `### `, `**negrita**`, listas con `- ` y párrafos por línea en blanco), metadata, canonical y CTA de WhatsApp; `/size-guide` incluye las tablas de ropa por edad y el calzado 28–44; `/faq` lista todas las preguntas con acordeón nativo y JSON-LD `FAQPage`; `not-found.tsx` de tienda con vuelta al inicio; `sitemap.ts` y `robots.ts` cubren productos activos, páginas publicadas y excluyen carrito/checkout. Pendiente de la Fase 13: la auditoría de accesibilidad medida y la prueba end-to-end con pedido real en el admin.
 
 ### Fase 13 — Calidad y salida · en curso
 
@@ -667,7 +666,7 @@ Las fases 7 a 12 corren en paralelo al trabajo del dashboard con reglas de convi
 
 ## 7. Plan de la tienda pública (`client.html`)
 
-Este apartado define el inventario funcional de la tienda, el diseño del carrito y del checkout, y las decisiones cerradas para ejecutar la Fase 7. La tienda reutiliza la base técnica del admin (primitivas, tokens, validación, dominios, formato de dinero y fechas) sin compartir layout ni tema: `(store)` aplica `.theme-store`, sus rutas son públicas y en inglés, mientras el contenido público (slugs de categoría, producto y páginas) se mantiene en español.
+Este apartado define el inventario funcional de la tienda, el diseño del carrito y del checkout, y las decisiones cerradas para ejecutar la Fase 7. La tienda reutiliza la base técnica del admin (primitivas, tokens, validación, dominios, formato de dinero y fechas) sin compartir layout ni tema: `(store)` aplica `.theme-store`, sus rutas y slugs de página son públicos y en inglés, mientras los slugs de categoría y producto conservan el texto comercial en español.
 
 ### Medición del prototipo
 
@@ -699,9 +698,9 @@ Mapeo de la configuración y el contenido del prototipo:
 | Carrito en drawer | `/cart` + `CartSheet` |
 | Pedido por WhatsApp | `/checkout` + pedido pendiente + WhatsApp |
 | `#/info/tallas` | `/size-guide` |
-| `#/info/{envios,cambios,nosotros,contacto}` | `/pages/[slug]` (seed del CMS) |
+| `#/info/{envios,cambios,nosotros,contacto}` | `/pages/{about,returns,contact}` y `/shipping` (seed del CMS) |
 | FAQ | `/faq` y `/pages/[slug]` |
-| Footer: política y términos | `/pages/privacidad` · `/pages/terminos-del-servicio` (seed del CMS; en el prototipo son `href="#"`) |
+| Footer: política y términos | `/pages/privacy` · `/pages/terms-and-conditions` (seed del CMS; en el prototipo son `href="#"`) |
 
 - Los search params viven en la URL y son la única fuente de filtros: `category`, `age`, `size`, `max`, `q`, `sale`, `sort`, `page`. Los enlaces de portada, header y footer son URLs compartibles reales.
 - Los valores de `age` en la URL son los valores del enum en inglés (`kids`, `teens`, `adults`), no los prototipos `nino|joven|adulto`; las etiquetas visibles son españolas.
@@ -824,12 +823,12 @@ No se instalan dependencias nuevas: React Hook Form, Zod, Sonner y las primitiva
 
 ### Checkout (diseño cerrado)
 
-- **Campos:** nombre, email, teléfono, ciudad, dirección, nota opcional y método de pago (`transfer` o `cash_on_delivery`, filtrados por los flags de `site_settings`). Validación en cliente con Zod + React Hook Form y de nuevo en la acción.
-- **Acción `createOrder` (transacción única):** revalida cada línea contra la base (producto activo, talla con stock ≥ qty, precio vigente) → recalcula subtotal, envío (0 si subtotal ≥ umbral) y total → inserta `orders` (`status: pending`, número humano), `order_items` con snapshot, primera entrada de `order_status_history` → decrementa stock por talla → limpia la cookie del carrito → devuelve número, totales y la URL de WhatsApp ya construida. Cualquier stock insuficiente devuelve error tipado que nombra la línea conflictiva; nada se persiste a medias.
+- **Campos:** nombre, email, teléfono, ciudad, dirección, nota opcional, código de cupón opcional y método de pago (`transfer` o `cash_on_delivery`, filtrados por los flags de `site_settings`). Validación en cliente con Zod + React Hook Form y de nuevo en la acción.
+- **Acción `createOrder` (transacción única):** revalida cada línea contra la base (producto activo, talla con stock ≥ qty, precio vigente) → valida cupón si se proporcionó (activo, no expirado, límite de usos, descuento por porcentaje o fijo con tope al subtotal) → recalcula subtotal, descuento, envío (0 si subtotal − descuento ≥ umbral) y total → inserta `orders` (`status: pending`, número humano, `customer_id` si hay sesión, `coupon_code` y `discount_cents`), `order_items` con snapshot, primera entrada de `order_status_history` → decrementa stock por talla → incrementa `uses` del cupón → limpia la cookie del carrito → devuelve número, totales y la URL de WhatsApp ya construida. Cualquier stock insuficiente o cupón inválido devuelve error tipado; nada se persiste a medias.
 - **Mensaje de WhatsApp:** generado en servidor (`features/orders/whatsapp.ts`, helper ya existente del admin) con líneas, talla, color y total; el cliente solo abre `wa.me` con la URL recibida. No se vuelve a calcular nada en el cliente.
 - **Confirmación:** tras el éxito, `/checkout/success?order=...&number=...&token=...` donde `token` es un HMAC de vida corta firmado con `CART_COOKIE_SECRET`; la página verifica token y número antes de mostrar resumen del pedido (evita exponer pedidos adivinando números). Ofrece reabrir el chat de WhatsApp y volver al catálogo.
 - **Compra directa del prototipo:** el botón "Comprar por WhatsApp" del producto se mantiene sin crear pedido (paridad); crea el pedido solo el checkout del carrito.
-- **Cupones:** fuera del checkout de la Fase 7; el CRUD del admin existe y el campo se añadirá como cambio posterior si el negocio lo pide.
+- **Cupones:** conectados al checkout. El formulario incluye un campo `couponCode`; la acción `createOrderAction` valida cupón activo, no expirado, límite de usos (`max_uses`), calcula el descuento (porcentaje o fijo con tope al subtotal), incrementa `uses` atómicamente y guarda `discount_cents` y `coupon_code` en la orden. El diálogo de cupones del admin incluye el campo «Límite de usos». Migración `0009_orders_customer_coupons.sql` aplicada.
 
 ### Reglas de renderizado y estado
 
@@ -855,12 +854,12 @@ No se instalan dependencias nuevas: React Hook Form, Zod, Sonner y las primitiva
 | Orden por defecto | `is_best_seller DESC, sold_count DESC`; `sort=new` = `created_at DESC`; `asc`/`desc` por precio | hace determinista la posición de portada y catálogo |
 | Tarjetas de edad del home | imagen del producto mejor vendido activo de cada grupo | sin configuración nueva en el CMS para la v1 |
 | Compra directa sin pedido | se mantiene como mensaje simple, sin stock ni número | paridad con el prototipo; el flujo real es el checkout |
-| Cupones en checkout | fuera de la Fase 7 | el CRUD existe; el campo se añade después si el negocio lo pide |
+| Cupones en checkout | implementados con validación completa y `max_uses` | el CRUD existía; ahora el checkout valida, aplica y registra el descuento |
 | Página de éxito | `/checkout/success` con token HMAC | evita exponer pedidos por número secuencial |
 | Guía de tallas | constantes TS, no CMS | contenido de negocio estable; la fórmula del prototipo es placeholder |
 | Paginación del catálogo | 24 por página | el prototipo no pagina pero la base tendrá más productos que sus 18 |
 | Render dinámico en v1 | toda página lee la cookie del carrito | simple y correcto; caché se evalúa midiendo en la Fase 8 |
-| Nav del header | lista curada constante (no todas las categorías) | paridad con el prototipo; el footer sí lista todas |
+| Nav del header | lista curada constante con fuente única `ALL_STORE_NAV`; items con `mobileOnly` para categorías extra en móvil | desktop incluye edades, categorías principales, ofertas, guía de tallas y contacto; móvil añade Camisas, Pantalones, Casacas y Accesorios |
 | Políticas del footer | páginas sembradas en el CMS en vez de `href="#"` | contenido real y obligatorio para lanzamiento |
 
 ### Cambios de comportamiento
@@ -884,24 +883,24 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 
 ## 8. Riesgos y restricciones
 
-1. **Imágenes locales vs. hosting serverless.** Escribir en disco requiere un servidor Node con volumen persistente. Vercel u otro serverless no sirve para subidas locales. Si más adelante se cambia a un bucket, habrá que migrar el servicio de medios; no se hace ahora porque el requisito es almacenamiento local.
+1. **Medios en Supabase Storage.** Las subidas ya no dependen del disco local: viven en el bucket privado `mistikax-media` y se sirven por `/media/[...path]`. La `SUPABASE_SECRET_KEY` es server-only y el bucket se crea en la primera subida. `storage/uploads` queda solo como respaldo de lectura para archivos anteriores; no se escriben archivos nuevos ahí.
 2. **Supabase para datos y Auth.** La autorización se implementa en el servidor con el rol de `public.profiles` y se prueba por rol; RLS queda como defensa en profundidad. La clave secreta y la cadena de conexión nunca llegan al cliente, y la autorización no depende de `user_metadata`.
 3. **Dos temas.** La disciplina de tokens es obligatoria. Mezclar colores o tipografías entre admin y tienda rompe la coherencia y duplica estilos.
 4. **Prototipos con datos simulados.** El seed no es dato de producción. Los precios del prototipo son decimales; la base usa centavos. Las fechas y los estados deben mapearse explícitamente.
 5. **Next.js 16.** `middleware.ts` está reemplazado por `proxy.ts`; `params` y `searchParams` son promesas. La documentación de shadcn y Supabase Auth debe verificarse contra las versiones instaladas en la fase correspondiente.
 6. **Invitaciones y correos.** Supabase Auth puede enviar invitaciones y recuperación de contraseña, pero requieren SMTP configurado; en la primera versión se crean usuarios y se cambian roles desde el panel, sin email.
 7. **Pagos.** El alcance es WhatsApp/pedido pendiente. Una pasarela de pago es otro proyecto.
-8. **Cuentas de cliente.** No existen en el prototipo. Se añaden después; no se diseñan ahora para no bloquear el checkout de invitado.
-9. **Contenido de páginas.** El editor del prototipo es texto plano. No se migra a HTML libre; si se necesita rich text, se planifica con un editor y sanitización.
+8. **Cuentas de cliente.** Se añadieron en la Fase 14 para la tienda (`/account`), con correo/contraseña y Google. El checkout prerrellena datos del cliente logueado y guarda `customer_id` en la orden; la cuenta muestra el historial de pedidos con estado, fecha y total. No hay wishlist.
+9. **Contenido de páginas.** El renderer soporta markdown básico (`## `, `### `, `**negrita**`, listas con `- `), además de párrafos por línea en blanco. Si se necesita rich text completo, se planifica con un editor y sanitización.
 10. **Borrado de productos.** No se borra un producto con historial; se archiva. Los pedidos guardan snapshots para no romperse.
 
 ## 9. Fuera de alcance
 
 - Pagos en línea y conciliación.
-- Cuentas de cliente, wishlist y programa de puntos.
+- Wishlist y programa de puntos.
 - Multi-tienda, multi-moneda o i18n.
 - Modo oscuro y selector de tema.
-- Supabase Storage, Realtime o Edge Functions.
+- Realtime y Edge Functions.
 - Envío de emails e invitaciones.
 - Analítica, marketing y SEO avanzado más allá de lo listado.
 
@@ -911,7 +910,7 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 - [ ] Ningún flujo depende de `localStorage`; los datos persisten en Postgres.
 - [ ] Las mutaciones validan en cliente y servidor; los errores se muestran sin romper la página.
 - [ ] Los roles se aplican en servidor, no solo en la navegación.
-- [ ] Las imágenes son locales y se sirven con validación y cache correctos.
+- [ ] Las imágenes se sirven desde Supabase Storage con validación de MIME, cache y cabeceras correctas.
 - [ ] La tienda tiene paridad con `client.html`, URLs compartibles, metadata y sitemap.
 - [ ] `pnpm lint`, `pnpm typecheck`, `pnpm build`, Vitest y Playwright pasan.
 - [ ] La checklist de accesibilidad y rendimiento está medida, no solo declarada.
@@ -920,10 +919,64 @@ La tienda comparte con el admin: formato de dinero/fechas, modelos de producto, 
 
 ## 11. Próximo paso
 
-Las fases 0 a 12 están completadas ✅. La Fase 4 se desbloqueó con el pool de una conexión y lecturas secuenciales; la tienda (7–12) está implementada con rutas en inglés.
+Las fases 0 a 12 están completadas ✅. La Fase 14 (cuentas de cliente) está implementada con historial de pedidos, cupones en checkout y vinculación de `customer_id`. La Fase 4 se desbloqueó con el pool de una conexión y lecturas secuenciales; la tienda (7–12) está implementada con rutas en inglés.
 
 1. Terminar la Fase 13: pruebas Vitest de `totals.ts`, `size-guide.ts` y transiciones de pedido, más Playwright para login, CRUD de producto y checkout.
 2. Medir accesibilidad y rendimiento en las tres vistas principales (home, catálogo, producto) y registrar los resultados en la checklist.
 3. Probar el pedido completo en `/admin/orders` (crear desde `/checkout`, verlo pendiente y cancelarlo con restauración de stock).
-4. Documentar las variables de entorno, el backup de base y uploads, y el volumen persistente.
+4. Documentar las variables de entorno, el backup de base y del bucket, y el flujo de subida en Supabase Storage.
 5. Aprobar la paridad final antes de archivar los HTML del prototipo.
+
+---
+
+## 12. Cuentas de cliente y acceso con Google (Fase 14)
+
+**Estado:** implementada; consentimiento real de Google verificado. Historial de pedidos y vinculación de `customer_id` implementados.
+
+**Alcance:** cuentas para la tienda, sin tocar el checkout de invitado ni el acceso del equipo.
+
+- Rutas: `/account/sign-in`, `/account/sign-up` y `/account`; callback PKCE en `/auth/callback`. Todas las rutas y nombres de archivo van en inglés; solo el copy visible es español. El header muestra «Entrar» sin sesión y, con sesión, el nombre del cliente con un menú a `/account` y el cierre de sesión; el menú móvil incluye las mismas opciones y el footer mantiene «Mi cuenta».
+- Con sesión, `/checkout` prerrellena nombre y correo; teléfono, ciudad y dirección se completan en el pedido.
+- Métodos: correo/contraseña (`signInWithPassword` y `signUp`) y Google (`signInWithOAuth` con `prompt=select_account`). El registro guarda `full_name` en `user_metadata` y el trigger de `auth.users` crea el perfil con rol `customer`, que queda fuera del panel: `getAdminSession()` solo acepta `admin` o `editor` activos y el equipo filtra esos dos roles.
+- `proxy.ts` refresca la sesión y redirige `/account/*` sin sesión a `/account/sign-in`; las páginas de entrar y registro redirigen a `/account` cuando ya hay sesión.
+- El panel mantiene solo correo/contraseña: Google no aporta nada al equipo y añadiría una vía de acceso que no se gestiona por rol. `/login` redirige a `/admin` solo si el usuario tiene perfil activo, de modo que una cuenta de cliente no provoca un bucle de redirecciones.
+- Configuración en Supabase: proveedor Google habilitado con su Client ID y Secret, y en Authentication → URL Configuration las Redirect URLs `http://localhost:3000/auth/callback` y `https://<dominio>/auth/callback`.
+- Correo: sin SMTP propio, la confirmación de registro usa el remitente de Supabase. Con «Confirm email» activo, el registro muestra «revisa tu bandeja»; con auto-confirmación, entra directo.
+- Pendiente: probar el consentimiento de Google en local, el registro con confirmación y el cierre de sesión; añadir «olvidé mi contraseña» cuando haya SMTP configurado.
+5. Aprobar la paridad final antes de archivar los HTML del prototipo.
+
+## 12. Endurecimiento de seguridad aplicado
+
+Auditoría del cliente y de la sesión (2026-11-08), verificada contra la base real y el servidor de desarrollo.
+
+- [x] RLS activo en las 17 tablas de `public` y grants de `anon`/`authenticated` revocados (`drizzle/0007_security_hardening.sql`); PostgREST responde 401 `42501`.
+- [x] Migración `0009_orders_customer_coupons.sql` aplicada: `customer_id`, `coupon_code` y `discount_cents` en `orders`; `max_uses` en `coupons`; índice `orders_customer_id_idx`.
+- [x] Eliminada la Server Action `lookupOrderForConfirmation`, que exponía pedidos por `ord_N` sin token.
+- [x] Token de confirmación con caducidad de 24 h y comparación en tiempo constante.
+- [x] Número de pedido serializado con `pg_advisory_xact_lock`; sin colisiones por concurrencia.
+- [x] Rate limit de 10 pedidos cada 10 minutos por IP en `createOrderAction`.
+- [x] Origen canónico (`NEXT_PUBLIC_SITE_URL`) para los callbacks de Supabase; documentado en `.env.example`.
+- [x] JSON-LD escapado con `serializeJsonLd` en producto y FAQ.
+- [x] CSP, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS en producción desde `next.config.ts`.
+- [x] `getCustomerSession` rechaza perfiles inactivos; topes en filtros y cantidades; `robots.txt` excluye `/account`.
+- [x] Verificado: `/`, `/catalog`, `/product/[id]`, `/size-guide`, `/faq` y `/cart` responden 200; `/admin` sin sesión redirige a `/login`; `pnpm typecheck`, `pnpm lint` y `pnpm build` terminan en 0.
+
+Pendiente de la Fase 13: pedido end-to-end (checkout → admin → cancelación con reposición), rate limit compartido entre instancias (hoy en memoria) y auditoría de accesibilidad medida.
+
+---
+
+## 13. Medios en Supabase Storage
+
+**Estado:** implementado el 2026-11-08 con el bucket privado `mistikax-media`.
+
+**Decisión:** las subidas del panel dejan el disco local y viven en Supabase Storage. Se conserva la URL pública `/media/<object_key>` servida por `src/app/media/[...path]/route.ts`, así que los valores de `media.path` y `product_images.path` no cambian y el catálogo sigue funcionando.
+
+- **Bucket:** `mistikax-media`, privado. Se crea automáticamente en la primera subida con `SUPABASE_SECRET_KEY`; el nombre se puede cambiar con `SUPABASE_STORAGE_BUCKET`. Límite de 5 MB y MIME permitidos: PNG, JPEG, WebP, GIF y SVG.
+- **Clave del objeto:** `YYYY/MM/<uuid>.<ext>`, la misma que `media.object_key`. Cada fila guarda `path = /media/<object_key>`, `source = upload`, MIME, bytes y checksum SHA-256.
+- **Subida:** `writeUploadFile` valida los magic bytes con `detectImage` antes de llamar a Storage; si falla el insert en `media`, la acción borra el objeto recién subido.
+- **Lectura:** `readUploadFile` descarga del bucket y la ruta responde con `Cache-Control: public, max-age=31536000, immutable`, `X-Content-Type-Options: nosniff` y CSP `default-src 'none'; sandbox`. Si el objeto no está en el bucket, intenta `storage/uploads` como respaldo legado; ese directorio ya no recibe archivos nuevos.
+- **Borrado:** elimina el objeto del bucket y el archivo legado si existe; las filas `catalog` siguen protegidas y una imagen en uso por un producto no se puede borrar.
+- **Seguridad:** la service key solo se usa en módulos `server-only`; el bucket es privado y el cliente nunca recibe la clave ni URLs firmadas. El SVG se sirve con CSP sandbox para que no ejecute scripts.
+- **Migración:** los objetos subidos antes del cambio se copiaron con el `object_key` y el `mime` de `media`. Se verificó con una descarga real y con una petición a la URL pública del bucket, que debe fallar.
+- **Catálogo:** las fotos reales de producto y el hero viven en `catalog/<id>.<ext>` del mismo bucket. `src/features/catalog/media-manifest.ts` guarda path, MIME, bytes y checksum para que `pnpm db:seed` las reinserte sin leer archivos locales.
+- **Pendiente:** probar una subida desde `/admin/media` con una cuenta real y definir el respaldo del bucket (Supabase incluye los objetos en los backups del proyecto; no hay versionado por defecto).
