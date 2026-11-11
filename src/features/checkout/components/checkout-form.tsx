@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -97,6 +98,7 @@ export function CheckoutForm({
       shippingMethod: defaultMethod,
       shippingZone: defaultMethod === "courier" ? "provinces" : "lima",
       couponCode: "",
+      termsAccepted: false,
       idempotencyKey: formId,
     },
   });
@@ -404,6 +406,44 @@ export function CheckoutForm({
             {serverError}
           </p>
         ) : null}
+
+        <div className="space-y-1">
+          <div className="flex items-start gap-2">
+            <Controller
+              control={control}
+              name="termsAccepted"
+              render={({ field }) => (
+                <Checkbox
+                  id="termsAccepted"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  aria-invalid={Boolean(errors.termsAccepted)}
+                />
+              )}
+            />
+            <Label
+              htmlFor="termsAccepted"
+              className="text-grey-dark cursor-pointer text-xs leading-relaxed"
+            >
+              Acepto los{" "}
+              <Link
+                href="/pages/terms-and-conditions"
+                target="_blank"
+                className="text-foreground underline underline-offset-4"
+              >
+                términos y condiciones
+              </Link>
+              .
+            </Label>
+          </div>
+          {errors.termsAccepted ? (
+            <p role="alert" className="text-error text-xs">
+              {errors.termsAccepted.message}
+            </p>
+          ) : null}
+        </div>
 
         <Button
           type="submit"

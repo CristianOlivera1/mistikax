@@ -38,6 +38,9 @@ export const checkoutSchema = z
     shippingMethod: z.enum(CHECKOUT_SHIPPING_METHODS, {
       error: "Elige un método de entrega.",
     }),
+    termsAccepted: z.boolean().refine((accepted) => accepted, {
+      error: "Debes aceptar los términos y condiciones para continuar.",
+    }),
     shippingZone: z.enum(CHECKOUT_SHIPPING_ZONES, {
       error: "Elige una zona de entrega.",
     }),
