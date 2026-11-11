@@ -1,3 +1,4 @@
+import Form from "next/form";
 import Link from "next/link";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { Icon } from "@/components/icons/icon";
@@ -21,9 +22,9 @@ export function InventoryFilters({ filters }: InventoryFiltersProps) {
 
   return (
     <FilterBar>
-      <form
+      <Form
         action="/admin/inventory"
-        method="get"
+        scroll={false}
         className="flex flex-1 flex-wrap items-center gap-2"
       >
         <div className="relative">
@@ -70,7 +71,7 @@ export function InventoryFilters({ filters }: InventoryFiltersProps) {
             Limpiar
           </Link>
         ) : null}
-      </form>
+      </Form>
     </FilterBar>
   );
 }

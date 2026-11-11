@@ -1,3 +1,4 @@
+import Form from "next/form";
 import Link from "next/link";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { Icon } from "@/components/icons/icon";
@@ -65,9 +66,9 @@ export async function OrderFilters({ filters }: OrderFiltersProps) {
         </nav>
       </div>
       <FilterBar className="border-b-0">
-        <form
+        <Form
           action="/admin/orders"
-          method="get"
+          scroll={false}
           className="flex flex-1 flex-wrap items-center gap-2"
         >
           {filters.status !== "all" ? (
@@ -90,7 +91,7 @@ export async function OrderFilters({ filters }: OrderFiltersProps) {
               className="h-8 w-56 pl-8"
             />
           </div>
-        </form>
+        </Form>
       </FilterBar>
     </div>
   );

@@ -1,3 +1,4 @@
+import Form from "next/form";
 import Link from "next/link";
 import { AGE_GROUPS } from "@/lib/constants";
 import {
@@ -155,7 +156,7 @@ export function CatalogFilters({
       </FilterGroup>
 
       <FilterGroup label="Precio">
-        <form action="/catalog" method="get" className="space-y-3">
+        <Form action="/catalog" scroll={false} className="space-y-3">
           {filters.category ? (
             <input type="hidden" name="category" value={filters.category} />
           ) : null}
@@ -186,7 +187,7 @@ export function CatalogFilters({
               Aplicar
             </button>
           </div>
-        </form>
+        </Form>
       </FilterGroup>
 
       <FilterGroup label="Ofertas">

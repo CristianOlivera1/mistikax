@@ -1,3 +1,4 @@
+import Form from "next/form";
 import Link from "next/link";
 import { FilterBar } from "@/components/admin/filter-bar";
 import { Icon } from "@/components/icons/icon";
@@ -11,9 +12,9 @@ type CustomerFiltersProps = {
 export function CustomerFilters({ filters }: CustomerFiltersProps) {
   return (
     <FilterBar>
-      <form
+      <Form
         action="/admin/customers"
-        method="get"
+        scroll={false}
         className="flex flex-1 flex-wrap items-center gap-2"
       >
         <div className="relative">
@@ -33,7 +34,7 @@ export function CustomerFilters({ filters }: CustomerFiltersProps) {
             className="h-8 w-72 pl-8"
           />
         </div>
-      </form>
+      </Form>
       {filters.query ? (
         <Link
           href="/admin/customers"
